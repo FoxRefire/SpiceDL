@@ -4,7 +4,7 @@
 import * as API from "../api";
 
 const { React } = Spicetify;
-const { useState, useEffect } = React;
+const { useState, useEffect, useMemo, useRef } = React;
 
 interface DownloadStatusPageProps {
   [key: string]: any;
@@ -22,11 +22,13 @@ interface TrackMetadata {
 const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
   const [downloads, setDownloads] = useState([] as API.DownloadStatus[]);
   const [metadataCache, setMetadataCache] = useState({} as Record<string, TrackMetadata>);
+  const metadataCacheRef = useRef({} as Record<string, TrackMetadata>); // Ref to always have latest cache
   const [metadataFetching, setMetadataFetching] = useState(new Set<string>()); // Track URLs being fetched
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null as string | null);
   const [apiAvailable, setApiAvailable] = useState(false);
   const [filter, setFilter] = useState("all" as string); // all, active, completed, failed
+  const imageUrlCache = useRef({} as Record<string, string>); // Cache image URLs to prevent re-rendering
 
   // Convert URL to URI
   const urlToUri = (url: string): string | null => {
@@ -46,8 +48,8 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
     const uri = urlToUri(url);
     if (!uri) return null;
 
-    // Return cached if available (and not loading/error state)
-    const cached = metadataCache[url];
+    // Return cached if available (and not loading/error state) - use ref for latest value
+    const cached = metadataCacheRef.current[url];
     if (cached && cached.name !== "読み込み中..." && cached.name !== "メタデータ取得失敗") {
       return cached;
     }
@@ -297,7 +299,9 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
       }
 
       if (metadata) {
-        setMetadataCache((prev: Record<string, TrackMetadata>) => ({ ...prev, [url]: metadata }));
+        const updatedCache = { ...metadataCacheRef.current, [url]: metadata };
+        metadataCacheRef.current = updatedCache;
+        setMetadataCache(updatedCache);
         setMetadataFetching((prev: Set<string>) => {
           const next = new Set(prev);
           next.delete(url);
@@ -307,11 +311,12 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
       }
     } catch (err) {
       console.error("Error fetching metadata:", err);
-      // Set error state
-      setMetadataCache((prev: Record<string, TrackMetadata>) => ({
-        ...prev,
-        [url]: { name: "メタデータ取得失敗", uri: uri, type: type },
-      }));
+      // Set error state only if we don't have valid metadata already
+      if (!metadataCacheRef.current[url] || metadataCacheRef.current[url].name === "読み込み中..." || metadataCacheRef.current[url].name === "メタデータ取得失敗") {
+        const updatedCache = { ...metadataCacheRef.current, [url]: { name: "メタデータ取得失敗", uri: uri, type: type } };
+        metadataCacheRef.current = updatedCache;
+        setMetadataCache(updatedCache);
+      }
     } finally {
       // Remove from fetching set
       setMetadataFetching((prev: Set<string>) => {
@@ -342,22 +347,32 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
       // Fetch metadata for all downloads (non-blocking)
       // Only fetch if not already cached and not currently fetching
       downloadsList.forEach((download) => {
-        const cached = metadataCache[download.url];
+        // Always use ref to get latest cache value
+        const cached = metadataCacheRef.current[download.url];
         const isFetching = metadataFetching.has(download.url);
         
-        // Only fetch if not cached (or cached but in error/loading state) and not currently fetching
-        if (!cached || cached.name === "読み込み中..." || cached.name === "メタデータ取得失敗") {
-          if (!isFetching) {
-            // Set loading state
-            setMetadataCache((prev: Record<string, TrackMetadata>) => ({
-              ...prev,
-              [download.url]: { name: "読み込み中...", uri: urlToUri(download.url) || undefined },
-            }));
-            
-            fetchMetadata(download.url).catch((err) => {
-              console.error("Error fetching metadata:", err);
-            });
+        // Only fetch if:
+        // 1. Not cached at all, OR
+        // 2. Cached but in error state (not loading state - we don't want to overwrite loading state)
+        // 3. Not currently fetching
+        const hasValidCache = cached && cached.name !== "読み込み中..." && cached.name !== "メタデータ取得失敗";
+        
+        if (!hasValidCache && !isFetching) {
+          // Only set loading state if we don't have any cache at all
+          // Never overwrite valid metadata with "読み込み中..."
+          if (!cached) {
+            // Check if we already have valid metadata in ref (shouldn't happen, but safety check)
+            const refCached = metadataCacheRef.current[download.url];
+            if (!refCached || refCached.name === "読み込み中..." || refCached.name === "メタデータ取得失敗") {
+              const updatedCache = { ...metadataCacheRef.current, [download.url]: { name: "読み込み中...", uri: urlToUri(download.url) || undefined } };
+              metadataCacheRef.current = updatedCache;
+              setMetadataCache(updatedCache);
+            }
           }
+          
+          fetchMetadata(download.url).catch((err) => {
+            console.error("Error fetching metadata:", err);
+          });
         }
       });
 
@@ -801,8 +816,29 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
           }}
         >
           {filteredDownloads.map((download: API.DownloadStatus) => {
-            const metadata = metadataCache[download.url];
-            const imageUrl = metadata?.imageUrl || "https://placehold.co/120x120?text=No+Image";
+            // Use ref to get latest metadata to prevent flickering
+            const metadata = metadataCacheRef.current[download.url] || metadataCache[download.url];
+            // Use cached image URL if available, otherwise use metadata or placeholder
+            const cachedImageUrl = imageUrlCache.current[download.id];
+            const newImageUrl = metadata?.imageUrl || "https://placehold.co/120x120?text=No+Image";
+            const imageUrl = cachedImageUrl || newImageUrl;
+            
+            // Update cache if image URL changed
+            if (metadata?.imageUrl && imageUrlCache.current[download.id] !== metadata.imageUrl) {
+              imageUrlCache.current[download.id] = metadata.imageUrl;
+            } else if (!cachedImageUrl) {
+              imageUrlCache.current[download.id] = newImageUrl;
+            }
+            
+            // Use metadata if available and valid, otherwise show loading
+            // Don't show "読み込み中..." if we have valid metadata cached
+            // Always check ref first to get latest value
+            const validMetadata = metadata && metadata.name !== "読み込み中..." && metadata.name !== "メタデータ取得失敗";
+            const displayName = validMetadata
+              ? metadata.name
+              : metadata?.name === "読み込み中..."
+              ? "読み込み中..."
+              : "読み込み中...";
             
             return (
               <div
@@ -839,6 +875,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
                   }}
                 >
                   <img
+                    key={`img-${download.id}-${imageUrl}`}
                     src={imageUrl}
                     alt={metadata?.name || "Cover"}
                     style={{
@@ -847,7 +884,17 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
                       objectFit: "cover",
                     }}
                     onError={(e) => {
-                      e.currentTarget.src = "https://placehold.co/120x120?text=No+Image";
+                      const placeholder = "https://placehold.co/120x120?text=No+Image";
+                      if (e.currentTarget.src !== placeholder) {
+                        imageUrlCache.current[download.id] = placeholder;
+                        e.currentTarget.src = placeholder;
+                      }
+                    }}
+                    onLoad={() => {
+                      // Image loaded successfully, ensure cache is set
+                      if (metadata?.imageUrl && imageUrlCache.current[download.id] !== metadata.imageUrl) {
+                        imageUrlCache.current[download.id] = metadata.imageUrl;
+                      }
                     }}
                   />
                   {download.status === "downloading" && (
@@ -894,9 +941,9 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap" as const,
                         }}
-                        title={metadata?.name || download.url}
+                        title={displayName || download.url}
                       >
-                        {metadata?.name || "読み込み中..."}
+                        {displayName}
                       </div>
                       {metadata?.artist && (
                         <div
