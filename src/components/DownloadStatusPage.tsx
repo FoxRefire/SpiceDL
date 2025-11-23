@@ -20,12 +20,13 @@ interface TrackMetadata {
 }
 
 const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
-  const [downloads, setDownloads] = useState<API.DownloadStatus[]>([]);
-  const [metadataCache, setMetadataCache] = useState<Record<string, TrackMetadata>>({});
+  const [downloads, setDownloads] = useState([] as API.DownloadStatus[]);
+  const [metadataCache, setMetadataCache] = useState({} as Record<string, TrackMetadata>);
+  const [metadataFetching, setMetadataFetching] = useState(new Set<string>()); // Track URLs being fetched
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null as string | null);
   const [apiAvailable, setApiAvailable] = useState(false);
-  const [filter, setFilter] = useState<string>("all"); // all, active, completed, failed
+  const [filter, setFilter] = useState("all" as string); // all, active, completed, failed
 
   // Convert URL to URI
   const urlToUri = (url: string): string | null => {
@@ -45,20 +46,30 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
     const uri = urlToUri(url);
     if (!uri) return null;
 
-    // Return cached if available
-    if (metadataCache[url]) {
-      return metadataCache[url];
+    // Return cached if available (and not loading/error state)
+    const cached = metadataCache[url];
+    if (cached && cached.name !== "読み込み中..." && cached.name !== "メタデータ取得失敗") {
+      return cached;
     }
 
+    // Prevent duplicate requests
+    if (metadataFetching.has(url)) {
+      return cached || null;
+    }
+
+    // Mark as fetching
+    setMetadataFetching((prev: Set<string>) => new Set(prev).add(url));
+
+    const type = uri.split(":")[1];
+    const id = uri.split(":")[2];
+    let metadata: TrackMetadata | null = null;
+
     try {
-      const type = uri.split(":")[1];
-      let metadata: TrackMetadata | null = null;
 
       // Use CosmosAsync API to fetch metadata from Spotify Web API
       try {
         // Try CosmosAsync first (recommended)
         if (Spicetify.CosmosAsync) {
-          const id = uri.split(":")[2];
           let response: any = null;
           
           if (type === "track") {
@@ -286,11 +297,28 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
       }
 
       if (metadata) {
-        setMetadataCache((prev) => ({ ...prev, [url]: metadata }));
+        setMetadataCache((prev: Record<string, TrackMetadata>) => ({ ...prev, [url]: metadata }));
+        setMetadataFetching((prev: Set<string>) => {
+          const next = new Set(prev);
+          next.delete(url);
+          return next;
+        });
         return metadata;
       }
     } catch (err) {
       console.error("Error fetching metadata:", err);
+      // Set error state
+      setMetadataCache((prev: Record<string, TrackMetadata>) => ({
+        ...prev,
+        [url]: { name: "メタデータ取得失敗", uri: uri, type: type },
+      }));
+    } finally {
+      // Remove from fetching set
+      setMetadataFetching((prev: Set<string>) => {
+        const next = new Set(prev);
+        next.delete(url);
+        return next;
+      });
     }
 
     return null;
@@ -312,28 +340,24 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
       setDownloads(downloadsList);
 
       // Fetch metadata for all downloads (non-blocking)
+      // Only fetch if not already cached and not currently fetching
       downloadsList.forEach((download) => {
-        if (!metadataCache[download.url]) {
-          // Set loading state
-          setMetadataCache((prev) => ({
-            ...prev,
-            [download.url]: { name: "読み込み中...", uri: urlToUri(download.url) || undefined },
-          }));
-          
-          fetchMetadata(download.url).then((meta) => {
-            if (meta) {
-              setMetadataCache((prev) => ({
-                ...prev,
-                [download.url]: meta,
-              }));
-            }
-          }).catch((err) => {
-            console.error("Error fetching metadata:", err);
-            setMetadataCache((prev) => ({
+        const cached = metadataCache[download.url];
+        const isFetching = metadataFetching.has(download.url);
+        
+        // Only fetch if not cached (or cached but in error/loading state) and not currently fetching
+        if (!cached || cached.name === "読み込み中..." || cached.name === "メタデータ取得失敗") {
+          if (!isFetching) {
+            // Set loading state
+            setMetadataCache((prev: Record<string, TrackMetadata>) => ({
               ...prev,
-              [download.url]: { name: "メタデータ取得失敗", uri: urlToUri(download.url) || undefined },
+              [download.url]: { name: "読み込み中...", uri: urlToUri(download.url) || undefined },
             }));
-          });
+            
+            fetchMetadata(download.url).catch((err) => {
+              console.error("Error fetching metadata:", err);
+            });
+          }
         }
       });
 
@@ -461,7 +485,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
     }
   };
 
-  const filteredDownloads = downloads.filter((dl) => {
+  const filteredDownloads = downloads.filter((dl: API.DownloadStatus) => {
     if (filter === "all") return true;
     if (filter === "active") return dl.status === "downloading" || dl.status === "starting";
     if (filter === "completed") return dl.status === "completed";
@@ -471,9 +495,9 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
 
   const stats = {
     total: downloads.length,
-    active: downloads.filter((d) => d.status === "downloading" || d.status === "starting").length,
-    completed: downloads.filter((d) => d.status === "completed").length,
-    failed: downloads.filter((d) => d.status === "failed" || d.status === "cancelled").length,
+    active: downloads.filter((d: API.DownloadStatus) => d.status === "downloading" || d.status === "starting").length,
+    completed: downloads.filter((d: API.DownloadStatus) => d.status === "completed").length,
+    failed: downloads.filter((d: API.DownloadStatus) => d.status === "failed" || d.status === "cancelled").length,
   };
 
   if (loading) {
@@ -736,7 +760,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
             gap: "12px",
           }}
         >
-          {filteredDownloads.map((download) => {
+          {filteredDownloads.map((download: API.DownloadStatus) => {
             const metadata = metadataCache[download.url];
             const imageUrl = metadata?.imageUrl || "https://placehold.co/120x120?text=No+Image";
             
@@ -899,7 +923,9 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
                           fontWeight: "bold",
                         }}
                       >
-                        {download.progress}%
+                        {download.total_tracks && download.completed_tracks !== undefined
+                          ? `${download.progress}% (${download.completed_tracks}/${download.total_tracks})`
+                          : `${download.progress}%`}
                       </span>
                     )}
                   </div>

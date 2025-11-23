@@ -7,6 +7,7 @@ import os
 import json
 import shutil
 import sys
+import re
 from typing import Dict, Optional
 from datetime import datetime
 from pathlib import Path
@@ -94,7 +95,9 @@ class DownloadManager:
                 "started_at": datetime.now().isoformat(),
                 "completed_at": None,
                 "error": None,
-                "process": None
+                "process": None,
+                "total_tracks": None,
+                "completed_tracks": 0
             }
         
         # Start download in a separate thread
@@ -128,27 +131,14 @@ class DownloadManager:
             if self.download_folder.exists():
                 files_before = set(f.name for f in self.download_folder.iterdir() if f.is_file())
             
-            # Build spotDL command
-            # Try different argument formats for different spotDL versions
+            # Build spotDL command with --simple-tui for better progress tracking
             cmd = self.spotdl_command + [
+                "download",
                 spotify_url,
                 "--output", str(self.download_folder),
+                "--format", "mp3",
+                "--simple-tui",
             ]
-            
-            # Check spotDL version and use appropriate format flag
-            # Newer versions use --format, older versions might use different flags
-            try:
-                version_check = subprocess.run(
-                    self.spotdl_command + ["--version"],
-                    capture_output=True,
-                    text=True,
-                    timeout=5
-                )
-                # Add format flag if supported
-                cmd.extend(["--format", "mp3"])
-            except:
-                # If version check fails, try without format flag
-                pass
             
             # Log the command being executed
             print(f"Executing spotDL command: {' '.join(cmd)}")
@@ -166,20 +156,39 @@ class DownloadManager:
             
             with self.lock:
                 self.downloads[download_id]["process"] = process
+                # Initialize track counters
+                self.downloads[download_id]["total_tracks"] = None
+                self.downloads[download_id]["completed_tracks"] = 0
             
             # Read output line by line to track progress
             output_lines = []
+            
             for line in process.stdout:
                 if line:
                     output_lines.append(line)
                     line_stripped = line.strip()
                     print(f"spotDL: {line_stripped}")
                     
+                    # Parse progress from --simple-tui output
+                    # Format examples: "Downloading 1/10", "Downloaded 5/10", etc.
+                    # Also look for patterns like "[1/10]" or "(1/10)"
+                    progress_match = re.search(r'(\d+)/(\d+)', line_stripped)
+                    if progress_match:
+                        completed = int(progress_match.group(1))
+                        total = int(progress_match.group(2))
+                        with self.lock:
+                            self.downloads[download_id]["completed_tracks"] = completed
+                            self.downloads[download_id]["total_tracks"] = total
+                            if total > 0:
+                                self.downloads[download_id]["progress"] = min(int((completed / total) * 100), 100)
+                            self.downloads[download_id]["message"] = f"Downloading {completed}/{total} tracks"
+                    
                     # Try to parse progress from spotDL output
                     if "Downloading" in line or "downloading" in line.lower() or "Fetching" in line or "Converting" in line:
                         with self.lock:
-                            self.downloads[download_id]["message"] = line_stripped
-                    elif "%" in line:
+                            if not progress_match:  # Only update message if we didn't already update it
+                                self.downloads[download_id]["message"] = line_stripped
+                    elif "%" in line and not progress_match:
                         try:
                             percent = int(line.split("%")[0].split()[-1])
                             with self.lock:

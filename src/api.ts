@@ -18,6 +18,8 @@ export interface DownloadStatus {
   started_at: string;
   completed_at: string | null;
   error: string | null;
+  total_tracks?: number | null;
+  completed_tracks?: number;
 }
 
 export interface AllStatusResponse {
