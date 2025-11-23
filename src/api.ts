@@ -135,3 +135,25 @@ export async function openSettings(): Promise<void> {
   }
 }
 
+/**
+ * Open download folder in file manager
+ */
+export async function openDownloadFolder(): Promise<void> {
+  try {
+    const response = await fetch(`${getApiBaseUrl()}/open-download-folder`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || `HTTP error! status: ${response.status}`);
+    }
+  } catch (error) {
+    console.error("Error opening download folder:", error);
+    throw error;
+  }
+}
+

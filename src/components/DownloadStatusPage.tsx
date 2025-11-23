@@ -578,28 +578,68 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
             {stats.total}件のダウンロード
           </p>
         </div>
-        <button
-          onClick={fetchStatus}
+        <div
           style={{
-            padding: "10px 20px",
-            backgroundColor: "var(--spice-button)",
-            color: "var(--spice-text)",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontSize: "14px",
-            fontWeight: "bold",
-            transition: "opacity 0.2s",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.opacity = "0.8";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.opacity = "1";
+            display: "flex",
+            gap: "10px",
+            alignItems: "center",
           }}
         >
-          ⟳ 更新
-        </button>
+          <button
+            onClick={async () => {
+              try {
+                await API.openDownloadFolder();
+                Spicetify.showNotification("ダウンロード先フォルダを開きました");
+              } catch (error) {
+                Spicetify.showNotification(
+                  error instanceof Error ? error.message : "フォルダを開けませんでした",
+                  true
+                );
+              }
+            }}
+            style={{
+              padding: "10px 20px",
+              backgroundColor: "var(--spice-button)",
+              color: "var(--spice-text)",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "bold",
+              transition: "opacity 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = "0.8";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = "1";
+            }}
+          >
+            📁 ダウンロード先を開く
+          </button>
+          <button
+            onClick={fetchStatus}
+            style={{
+              padding: "10px 20px",
+              backgroundColor: "var(--spice-button)",
+              color: "var(--spice-text)",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: "bold",
+              transition: "opacity 0.2s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = "0.8";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = "1";
+            }}
+          >
+            ⟳ 更新
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}

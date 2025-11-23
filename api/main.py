@@ -123,6 +123,37 @@ def open_settings():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/open-download-folder", methods=["POST"])
+def open_download_folder():
+    """Open download folder in file manager"""
+    try:
+        import platform
+        import subprocess
+        
+        folder_path = download_manager.download_folder.resolve()
+        
+        # Ensure folder exists
+        folder_path.mkdir(parents=True, exist_ok=True)
+        
+        # Open folder based on platform
+        system = platform.system()
+        if system == "Windows":
+            subprocess.Popen(["explorer", str(folder_path)])
+        elif system == "Darwin":  # macOS
+            subprocess.Popen(["open", str(folder_path)])
+        else:  # Linux and others
+            subprocess.Popen(["xdg-open", str(folder_path)])
+        
+        return jsonify({
+            "success": True,
+            "message": f"Opened download folder: {folder_path}",
+            "path": str(folder_path)
+        }), 200
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 def run_server(host=None, port=None):
     """Run the Flask server"""
     host = host or config_manager.get("host", "127.0.0.1")
