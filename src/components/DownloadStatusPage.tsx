@@ -4,7 +4,7 @@
 import * as API from "../api";
 
 const { React } = Spicetify;
-const { useState, useEffect, useMemo, useRef } = React;
+const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
 interface DownloadStatusPageProps {
   [key: string]: any;
@@ -23,12 +23,18 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
   const [downloads, setDownloads] = useState([] as API.DownloadStatus[]);
   const [metadataCache, setMetadataCache] = useState({} as Record<string, TrackMetadata>);
   const metadataCacheRef = useRef({} as Record<string, TrackMetadata>); // Ref to always have latest cache
-  const [metadataFetching, setMetadataFetching] = useState(new Set<string>()); // Track URLs being fetched
+  const metadataFetchingRef = useRef(new Set<string>()); // Track URLs being fetched (use ref to avoid re-renders)
+  const [metadataFetching, setMetadataFetching] = useState(new Set<string>()); // Track URLs being fetched (for display purposes only)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null as string | null);
   const [apiAvailable, setApiAvailable] = useState(false);
   const [filter, setFilter] = useState("all" as string); // all, active, completed, failed
   const imageUrlCache = useRef({} as Record<string, string>); // Cache image URLs to prevent re-rendering
+  const isMountedRef = useRef(true); // Track if component is mounted
+  const abortControllerRef = useRef(null as AbortController | null); // AbortController for API requests
+  const activePromisesRef = useRef(new Set<Promise<any>>()); // Track active promises
+  const intervalRef = useRef(null as number | null); // Track interval
+  const fetchStatusRef = useRef(null as (() => Promise<void>) | null); // Ref to latest fetchStatus function
 
   // Convert URL to URI
   const urlToUri = (url: string): string | null => {
@@ -45,6 +51,11 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
 
   // Fetch metadata for a Spotify URI using CosmosAPI
   const fetchMetadata = async (url: string): Promise<TrackMetadata | null> => {
+    // Check if component is still mounted
+    if (!isMountedRef.current) {
+      return null;
+    }
+
     const uri = urlToUri(url);
     if (!uri) return null;
 
@@ -55,12 +66,14 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
     }
 
     // Prevent duplicate requests
-    if (metadataFetching.has(url)) {
+    if (metadataFetchingRef.current.has(url)) {
       return cached || null;
     }
 
     // Mark as fetching
-    setMetadataFetching((prev: Set<string>) => new Set(prev).add(url));
+    if (!isMountedRef.current) return null;
+    metadataFetchingRef.current.add(url);
+    setMetadataFetching(new Set(metadataFetchingRef.current));
 
     const type = uri.split(":")[1];
     const id = uri.split(":")[2];
@@ -299,17 +312,24 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
       }
 
       if (metadata) {
+        // Check if component is still mounted before updating state
+        if (!isMountedRef.current) {
+          return null;
+        }
         const updatedCache = { ...metadataCacheRef.current, [url]: metadata };
         metadataCacheRef.current = updatedCache;
         setMetadataCache(updatedCache);
-        setMetadataFetching((prev: Set<string>) => {
-          const next = new Set(prev);
-          next.delete(url);
-          return next;
-        });
+        metadataFetchingRef.current.delete(url);
+        if (isMountedRef.current) {
+          setMetadataFetching(new Set(metadataFetchingRef.current));
+        }
         return metadata;
       }
     } catch (err) {
+      // Check if component is still mounted before updating state
+      if (!isMountedRef.current) {
+        return null;
+      }
       console.error("Error fetching metadata:", err);
       // Set error state only if we don't have valid metadata already
       if (!metadataCacheRef.current[url] || metadataCacheRef.current[url].name === "読み込み中..." || metadataCacheRef.current[url].name === "メタデータ取得失敗") {
@@ -318,38 +338,68 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
         setMetadataCache(updatedCache);
       }
     } finally {
-      // Remove from fetching set
-      setMetadataFetching((prev: Set<string>) => {
-        const next = new Set(prev);
-        next.delete(url);
-        return next;
-      });
+      // Remove from fetching set only if component is still mounted
+      metadataFetchingRef.current.delete(url);
+      if (isMountedRef.current) {
+        setMetadataFetching(new Set(metadataFetchingRef.current));
+      }
     }
 
     return null;
   };
 
-  const fetchStatus = async () => {
+  const fetchStatus = useCallback(async () => {
+    // Check if component is still mounted
+    if (!isMountedRef.current) {
+      return;
+    }
+
+    const healthPromise = API.checkHealth();
+    activePromisesRef.current.add(healthPromise);
+    
     try {
-      const isHealthy = await API.checkHealth();
+      const isHealthy = await healthPromise;
+      activePromisesRef.current.delete(healthPromise);
+      
+      // Check again after async operation
+      if (!isMountedRef.current) {
+        return;
+      }
+      
       setApiAvailable(isHealthy);
 
       if (!isHealthy) {
+        if (!isMountedRef.current) return;
         setError("APIサーバーに接続できません。サーバーが起動しているか確認してください。");
         setLoading(false);
         return;
       }
 
-      const status = await API.getDownloadStatus();
+      const statusPromise = API.getDownloadStatus();
+      activePromisesRef.current.add(statusPromise);
+      
+      const status = await statusPromise;
+      activePromisesRef.current.delete(statusPromise);
+      
+      // Check again after async operation
+      if (!isMountedRef.current) {
+        return;
+      }
+      
       const downloadsList = "downloads" in status ? status.downloads : [status];
       setDownloads(downloadsList);
 
       // Fetch metadata for all downloads (non-blocking)
       // Only fetch if not already cached and not currently fetching
       downloadsList.forEach((download) => {
+        // Check if component is still mounted before processing
+        if (!isMountedRef.current) {
+          return;
+        }
+        
         // Always use ref to get latest cache value
         const cached = metadataCacheRef.current[download.url];
-        const isFetching = metadataFetching.has(download.url);
+        const isFetching = metadataFetchingRef.current.has(download.url);
         
         // Only fetch if:
         // 1. Not cached at all, OR
@@ -361,6 +411,10 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
           // Only set loading state if we don't have any cache at all
           // Never overwrite valid metadata with "読み込み中..."
           if (!cached) {
+            // Check if component is still mounted before updating state
+            if (!isMountedRef.current) {
+              return;
+            }
             // Check if we already have valid metadata in ref (shouldn't happen, but safety check)
             const refCached = metadataCacheRef.current[download.url];
             if (!refCached || refCached.name === "読み込み中..." || refCached.name === "メタデータ取得失敗") {
@@ -370,26 +424,92 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
             }
           }
           
-          fetchMetadata(download.url).catch((err) => {
-            console.error("Error fetching metadata:", err);
-          });
+          const metadataPromise = fetchMetadata(download.url);
+          activePromisesRef.current.add(metadataPromise);
+          
+          const cleanup = () => {
+            activePromisesRef.current.delete(metadataPromise);
+          };
+          
+          metadataPromise
+            .then(() => {
+              cleanup();
+            })
+            .catch((err) => {
+              cleanup();
+              // Only log error if component is still mounted
+              if (isMountedRef.current) {
+                console.error("Error fetching metadata:", err);
+              }
+            });
         }
       });
 
+      if (!isMountedRef.current) return;
       setError(null);
     } catch (err) {
+      // Check if component is still mounted before updating state
+      if (!isMountedRef.current) {
+        return;
+      }
       setError(err instanceof Error ? err.message : "ステータスの取得に失敗しました");
       console.error("Error fetching status:", err);
     } finally {
-      setLoading(false);
+      // Only update loading state if component is still mounted
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, []);
+
+  // Store fetchStatus in ref so it's always the latest version
+  fetchStatusRef.current = fetchStatus;
 
   useEffect(() => {
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 3000); // Update every 3 seconds
-    return () => clearInterval(interval);
-  }, []);
+    // Set mounted flag to true
+    isMountedRef.current = true;
+    
+    // Use ref to get latest fetchStatus
+    const currentFetchStatus = fetchStatusRef.current;
+    if (currentFetchStatus) {
+      currentFetchStatus();
+    }
+    
+    const interval = setInterval(() => {
+      // Only fetch if component is still mounted
+      if (isMountedRef.current) {
+        const latestFetchStatus = fetchStatusRef.current;
+        if (latestFetchStatus) {
+          latestFetchStatus();
+        }
+      }
+    }, 3000); // Update every 3 seconds
+    
+    intervalRef.current = interval;
+    
+    return () => {
+      // Cleanup: mark component as unmounted FIRST
+      isMountedRef.current = false;
+      
+      // Clear interval
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      
+      // Abort any ongoing API requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      
+      // Clear all active promises (they will check isMountedRef before updating state)
+      activePromisesRef.current.clear();
+      
+      // Clear fetchStatus ref
+      fetchStatusRef.current = null;
+    };
+  }, []); // Empty dependency array - we use ref to get latest function
 
   const handleCancel = async (downloadId: string) => {
     try {

@@ -168,6 +168,37 @@ async function main() {
       content: container,
       isLarge: true,
     });
+
+    // Cleanup when modal is closed using MutationObserver
+    const observer = new MutationObserver((mutations) => {
+      if (!document.body.contains(container)) {
+        // Modal was closed, unmount React component
+        ReactDOM.unmountComponentAtNode(container);
+        observer.disconnect();
+      }
+    });
+
+    // Observe the document body for changes
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    // Also monitor with interval as fallback
+    const checkModalClosed = setInterval(() => {
+      if (!document.body.contains(container)) {
+        // Modal was closed, unmount React component
+        ReactDOM.unmountComponentAtNode(container);
+        observer.disconnect();
+        clearInterval(checkModalClosed);
+      }
+    }, 500);
+
+    // Cleanup after 5 minutes (safety timeout)
+    setTimeout(() => {
+      observer.disconnect();
+      clearInterval(checkModalClosed);
+    }, 5 * 60 * 1000);
   }
 
   /**

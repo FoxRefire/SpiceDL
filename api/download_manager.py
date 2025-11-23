@@ -23,6 +23,22 @@ class DownloadManager:
         self.lock = threading.Lock()
         self.spotdl_command = self._find_spotdl_command()
     
+    def _get_url_type(self, url: str) -> str:
+        """Extract URL type from Spotify URL"""
+        try:
+            if "/track/" in url:
+                return "track"
+            elif "/album/" in url:
+                return "album"
+            elif "/playlist/" in url:
+                return "playlist"
+            elif "/artist/" in url:
+                return "artist"
+            else:
+                return "unknown"
+        except:
+            return "unknown"
+    
     def _find_spotdl_command(self) -> list:
         """
         Find spotDL command. Try multiple methods:
@@ -126,18 +142,38 @@ class DownloadManager:
                     "  pip install git+https://github.com/spotDL/spotify-downloader.git"
                 )
             
-            # Get list of files before download
+            # Determine URL type
+            url_type = self._get_url_type(spotify_url)
+            
+            # For albums and playlists, organize by album folders
+            # Use spotDL's output template to create folder structure
+            # Format: {album-artist}/{album}/{track-number} - {title}.{output-ext}
+            # This will create folders like "Artist Name/Album Name/track.mp3"
+            # spotDL supports template strings in --output option
+            if url_type in ["album", "playlist"]:
+                # Create output path with template
+                # spotDL will interpret template variables like {album-artist}, {album}, etc.
+                output_template = str(self.download_folder / "{album-artist} - {album}" / "{track-number} - {title}.{output-ext}")
+            else:
+                # For other types, use default structure
+                output_template = str(self.download_folder / "{artist} - {title}.{output-ext}")
+            
+            # Get list of files before download (recursively for folder comparison)
             files_before = set()
             if self.download_folder.exists():
-                files_before = set(f.name for f in self.download_folder.iterdir() if f.is_file())
+                for f in self.download_folder.rglob("*"):
+                    if f.is_file():
+                        files_before.add(f.relative_to(self.download_folder))
             
             # Build spotDL command with --simple-tui for better progress tracking
+            # Use output template to organize files by album folders
             cmd = self.spotdl_command + [
                 "download",
                 spotify_url,
-                "--output", str(self.download_folder),
+                "--output", output_template,
                 "--format", "mp3",
                 "--simple-tui",
+                "--playlist-retain-track-cover"
             ]
             
             # Log the command being executed
@@ -211,10 +247,12 @@ class DownloadManager:
             import time
             time.sleep(1)
             
-            # Check if files were actually created
+            # Check if files were actually created (recursively for folder structure)
             files_after = set()
             if self.download_folder.exists():
-                files_after = set(f.name for f in self.download_folder.iterdir() if f.is_file())
+                for f in self.download_folder.rglob("*"):
+                    if f.is_file():
+                        files_after.add(f.relative_to(self.download_folder))
             
             new_files = files_after - files_before
             
@@ -224,12 +262,14 @@ class DownloadManager:
                     if new_files:
                         self.downloads[download_id]["status"] = "completed"
                         self.downloads[download_id]["progress"] = 100
-                        file_list = ", ".join(list(new_files)[:5])  # Show first 5 files
-                        if len(new_files) > 5:
-                            file_list += f" and {len(new_files) - 5} more"
+                        # Convert Path objects to strings for JSON serialization
+                        new_files_str = [str(f) for f in new_files]
+                        file_list = ", ".join(new_files_str[:5])  # Show first 5 files
+                        if len(new_files_str) > 5:
+                            file_list += f" and {len(new_files_str) - 5} more"
                         self.downloads[download_id]["message"] = f"Download completed successfully. Files: {file_list}"
                         self.downloads[download_id]["completed_at"] = datetime.now().isoformat()
-                        self.downloads[download_id]["downloaded_files"] = list(new_files)
+                        self.downloads[download_id]["downloaded_files"] = new_files_str
                     else:
                         # Process returned 0 but no files were created
                         self.downloads[download_id]["status"] = "failed"
@@ -285,6 +325,11 @@ class DownloadManager:
                         serialized["process_running"] = False
                 else:
                     serialized["process_running"] = False
+            
+            # Convert any Path objects to strings
+            if "downloaded_files" in serialized and serialized["downloaded_files"]:
+                serialized["downloaded_files"] = [str(f) if isinstance(f, Path) else f for f in serialized["downloaded_files"]]
+            
             return serialized
         
         with self.lock:
