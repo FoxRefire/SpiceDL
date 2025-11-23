@@ -159,6 +159,7 @@ jobs:
         working-directory: ./api
         run: |
           chmod +x build_py2app.sh
+          chmod +x optimize_app.sh
           ./build_py2app.sh
       
       - name: Upload App artifact
