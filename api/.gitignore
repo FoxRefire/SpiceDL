@@ -1,28 +1,12 @@
 # Build artifacts
 build/
 dist/
-*.spec.bak
-*.pyc
+*.egg-info/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
-
-# PyInstaller
-*.manifest
-*.spec.bak
-# Keep spotdl-api.spec for building
-!spotdl-api.spec
-
-# Py2App
-*.app
-*.dmg
-
-# Package files
-*.deb
-*.rpm
-*.exe
 
 # Virtual environments
 venv/
@@ -39,3 +23,8 @@ ENV/
 .DS_Store
 Thumbs.db
 
+# Package files
+*.deb
+*.rpm
+*.exe
+*.app
