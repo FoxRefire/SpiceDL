@@ -17,14 +17,72 @@ echo "Optimizing App bundle: $APP_BUNDLE"
 PYTHON_LIB="${APP_BUNDLE}/Contents/Resources/lib/python3.11"
 PYSIDE6_DIR="${PYTHON_LIB}/PySide6"
 QT_DIR="${PYSIDE6_DIR}/Qt"
+PYTHON_FRAMEWORK="${APP_BUNDLE}/Contents/Frameworks/Python.framework"
 
 if [ -d "$PYSIDE6_DIR" ]; then
     echo "Aggressively removing unnecessary PySide6 files..."
     
+    # Remove development tools (Assistant, Designer, Linguist)
+    echo "Removing development tools..."
+    rm -rf "${PYSIDE6_DIR}/Assistant.app" 2>/dev/null || true
+    rm -rf "${PYSIDE6_DIR}/Designer.app" 2>/dev/null || true
+    rm -rf "${PYSIDE6_DIR}/Linguist.app" 2>/dev/null || true
+    
+    # Remove huge QtWebEngineCore framework (130M+)
+    echo "Removing QtWebEngineCore framework..."
+    rm -rf "${QT_DIR}/lib/QtWebEngineCore.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtWebEngine.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtWebEngineWidgets.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtWebEngineQuick.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtWebEngineQuickDelegatesQml.framework" 2>/dev/null || true
+    
+    # Remove other large frameworks
+    echo "Removing large unnecessary frameworks..."
+    rm -rf "${QT_DIR}/lib/QtPdf.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtPdfQuick.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtPdfWidgets.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtShaderTools.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtGraphs.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtGraphsWidgets.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtRemoteObjects.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtRemoteObjectsQml.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtScxml.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtScxmlQml.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtSerialBus.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtSpatialAudio.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtStateMachine.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtStateMachineQml.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtTextToSpeech.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtVirtualKeyboard.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtVirtualKeyboardQml.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtVirtualKeyboardSettings.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtWebChannel.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtWebChannelQuick.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtWebView.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtWebViewQuick.framework" 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtHttpServer.framework" 2>/dev/null || true
+    
+    # Remove all Qt3D frameworks
+    echo "Removing Qt3D frameworks..."
+    rm -rf "${QT_DIR}/lib/Qt3D"*.framework 2>/dev/null || true
+    
+    # Remove all QtQuick3D frameworks
+    echo "Removing QtQuick3D frameworks..."
+    rm -rf "${QT_DIR}/lib/QtQuick3D"*.framework 2>/dev/null || true
+    
+    # Remove all QtQuickControls2 frameworks
+    echo "Removing QtQuickControls2 frameworks..."
+    rm -rf "${QT_DIR}/lib/QtQuickControls2"*.framework 2>/dev/null || true
+    
+    # Remove all QtQuick* frameworks (except QtQuick itself if needed, but we don't use it)
+    echo "Removing QtQuick frameworks..."
+    rm -rf "${QT_DIR}/lib/QtQuick"*.framework 2>/dev/null || true
+    rm -rf "${QT_DIR}/lib/QtQml"*.framework 2>/dev/null || true
+    
     # Remove Qt plugins directory entirely (keep only platform plugins if needed)
     PLUGINS_DIR="${QT_DIR}/plugins"
     if [ -d "$PLUGINS_DIR" ]; then
-        echo "Removing Qt plugins..."
+        echo "Removing Qt plugins (keeping only platforms)..."
         # Keep only platform plugins (cocoa for macOS)
         if [ -d "$PLUGINS_DIR/platforms" ]; then
             mkdir -p "${PLUGINS_DIR}_backup/platforms"
@@ -65,18 +123,12 @@ if [ -d "$PYSIDE6_DIR" ]; then
                   Qt3DAnimation Qt3DExtras QtCharts QtDataVisualization QtLocation QtPositioning \
                   QtSensors QtSerialPort QtSql QtSvg QtSvgWidgets QtTest QtXml QtXmlPatterns \
                   QtBluetooth QtNfc QtWebSockets QtNetwork QtOpenGL QtOpenGLWidgets QtPrintSupport \
-                  QtHelp QtDesigner QtUiTools; do
+                  QtHelp QtDesigner QtUiTools QtPdf QtPdfQuick QtPdfWidgets QtShaderTools \
+                  QtGraphs QtGraphsWidgets QtRemoteObjects QtScxml QtSerialBus QtSpatialAudio \
+                  QtStateMachine QtTextToSpeech QtVirtualKeyboard QtWebChannel QtWebView \
+                  QtHttpServer QtConcurrent QtDBus; do
         find "$PYSIDE6_DIR" -type d -name "$module" -exec rm -rf {} + 2>/dev/null || true
         find "$PYSIDE6_DIR" -type f -name "${module}*" -delete 2>/dev/null || true
-    done
-    
-    # Remove .so/.dylib files for excluded modules
-    echo "Removing unnecessary Qt libraries..."
-    for lib in QtWebEngine QtWebEngineCore QtMultimedia QtQuick QtQml Qt3D QtCharts \
-               QtLocation QtSensors QtSerialPort QtSql QtSvg QtBluetooth QtNfc \
-               QtWebSockets QtNetwork QtOpenGL QtPrintSupport QtHelp QtDesigner QtUiTools; do
-        find "$QT_DIR" -type f -name "lib${lib}*.dylib" -delete 2>/dev/null || true
-        find "$QT_DIR" -type f -name "${lib}*.so" -delete 2>/dev/null || true
     done
     
     # Remove examples and demos
@@ -140,6 +192,59 @@ find "$APP_BUNDLE" -type f -name "README*" -delete 2>/dev/null || true
 # Remove .pyi type stub files
 echo "Removing type stub files..."
 find "$APP_BUNDLE" -type f -name "*.pyi" -delete 2>/dev/null || true
+
+# Optimize Python framework
+if [ -d "$PYTHON_FRAMEWORK" ]; then
+    echo "Optimizing Python framework..."
+    # Remove include directories (not needed at runtime)
+    find "$PYTHON_FRAMEWORK" -type d -name "include" -exec rm -rf {} + 2>/dev/null || true
+    # Remove _CodeSignature directories
+    find "$PYTHON_FRAMEWORK" -type d -name "_CodeSignature" -exec rm -rf {} + 2>/dev/null || true
+    # Remove Resources directories (usually empty)
+    find "$PYTHON_FRAMEWORK" -type d -name "Resources" -exec rm -rf {} + 2>/dev/null || true
+fi
+
+# Remove PySide6 include directories
+if [ -d "${PYSIDE6_DIR}/include" ]; then
+    echo "Removing PySide6 include directories..."
+    rm -rf "${PYSIDE6_DIR}/include" 2>/dev/null || true
+fi
+
+# Remove PySide6 scripts (deployment scripts, not needed)
+if [ -d "${PYSIDE6_DIR}/scripts" ]; then
+    echo "Removing PySide6 scripts..."
+    rm -rf "${PYSIDE6_DIR}/scripts" 2>/dev/null || true
+fi
+
+# Remove PySide6 typesystems (not needed at runtime)
+if [ -d "${PYSIDE6_DIR}/typesystems" ]; then
+    echo "Removing PySide6 typesystems..."
+    rm -rf "${PYSIDE6_DIR}/typesystems" 2>/dev/null || true
+fi
+
+# Remove PySide6 doc
+if [ -d "${PYSIDE6_DIR}/doc" ]; then
+    echo "Removing PySide6 documentation..."
+    rm -rf "${PYSIDE6_DIR}/doc" 2>/dev/null || true
+fi
+
+# Remove PySide6 lib/cmake (build files, not needed)
+if [ -d "${PYSIDE6_DIR}/lib" ]; then
+    echo "Removing PySide6 build files..."
+    rm -rf "${PYSIDE6_DIR}/lib" 2>/dev/null || true
+fi
+
+# Remove Qt metatypes (not needed at runtime)
+if [ -d "${QT_DIR}/metatypes" ]; then
+    echo "Removing Qt metatypes..."
+    rm -rf "${QT_DIR}/metatypes" 2>/dev/null || true
+fi
+
+# Remove Qt libexec
+if [ -d "${QT_DIR}/libexec" ]; then
+    echo "Removing Qt libexec..."
+    rm -rf "${QT_DIR}/libexec" 2>/dev/null || true
+fi
 
 # Calculate and display size
 SIZE=$(du -sh "$APP_BUNDLE" | cut -f1)
