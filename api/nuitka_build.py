@@ -33,6 +33,7 @@ def build_exe():
     dist_dir.mkdir(parents=True, exist_ok=True)
     
     # Build command
+    # Note: Nuitka automatically uses ~/.cache/Nuitka for caching
     cmd = [
         sys.executable, "-m", "nuitka",
         "--standalone",
@@ -55,6 +56,7 @@ def build_exe():
         "--include-module=tray_app",
         "--include-module=main",
         "--enable-plugin=pyside6",  # For PySide6 support
+        "--enable-plugin=anti-bloat",  # Reduce bloat and improve build speed
         f"--output-dir={dist_dir}",
         "--output-filename=spicedl2-api.exe",
         "--assume-yes-for-downloads",

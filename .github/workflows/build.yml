@@ -118,6 +118,19 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            api/requirements.txt
+      
+      - name: Cache Nuitka build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/Nuitka
+            ${{ runner.temp }}/Nuitka
+          key: ${{ runner.os }}-nuitka-${{ hashFiles('api/**/*.py', 'api/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-nuitka-
       
       - name: Install Python dependencies
         working-directory: ./api
