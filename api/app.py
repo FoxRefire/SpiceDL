@@ -9,7 +9,16 @@ from pathlib import Path
 # Import modules
 from main import app, run_server, config_manager, download_manager
 import gui
-import tray_app
+
+# Try to import tray_app, but make it optional
+try:
+    import tray_app
+    TRAY_AVAILABLE = True
+except (ImportError, ValueError) as e:
+    print(f"Warning: System tray not available: {e}")
+    print("Server will run without system tray icon.")
+    TRAY_AVAILABLE = False
+    tray_app = None
 
 
 class Application:
@@ -31,6 +40,10 @@ class Application:
     
     def start_tray(self):
         """Start the system tray icon"""
+        if not TRAY_AVAILABLE:
+            print("System tray is not available. Skipping tray icon.")
+            return
+        
         def run_tray():
             self.tray = tray_app.create_tray_app(
                 self.server_thread,
@@ -48,16 +61,23 @@ class Application:
         # Start server
         self.start_server()
         
-        # Start system tray
+        # Start system tray (if available)
         self.start_tray()
         
         # Keep main thread alive
         try:
-            self.tray_thread.join()
+            if self.tray_thread:
+                self.tray_thread.join()
+            else:
+                # If no tray, just wait for keyboard interrupt
+                while True:
+                    import time
+                    time.sleep(1)
         except KeyboardInterrupt:
             print("\nShutting down...")
             if self.tray:
                 self.tray.quit_app()
+            sys.exit(0)
 
 
 def main():
