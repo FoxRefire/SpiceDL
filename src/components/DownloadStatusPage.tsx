@@ -624,7 +624,8 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
     if (filter === "all") return true;
     if (filter === "active") return dl.status === "downloading" || dl.status === "starting";
     if (filter === "completed") return dl.status === "completed";
-    if (filter === "failed") return dl.status === "failed" || dl.status === "cancelled";
+    if (filter === "failed") return dl.status === "failed";
+    if (filter === "cancelled") return dl.status === "cancelled";
     return true;
   });
 
@@ -632,7 +633,8 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
     total: downloads.length,
     active: downloads.filter((d: API.DownloadStatus) => d.status === "downloading" || d.status === "starting").length,
     completed: downloads.filter((d: API.DownloadStatus) => d.status === "completed").length,
-    failed: downloads.filter((d: API.DownloadStatus) => d.status === "failed" || d.status === "cancelled").length,
+    failed: downloads.filter((d: API.DownloadStatus) => d.status === "failed").length,
+    cancelled: downloads.filter((d: API.DownloadStatus) => d.status === "cancelled").length,
   };
 
   if (loading) {
@@ -855,6 +857,25 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
             </div>
             <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>失敗</div>
           </div>
+          <div
+            style={{
+              padding: "12px",
+              backgroundColor: "var(--spice-card)",
+              borderRadius: "8px",
+              border: "1px solid var(--spice-border)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "24px",
+                fontWeight: "bold",
+                color: "var(--spice-text-subdued)",
+              }}
+            >
+              {stats.cancelled}
+            </div>
+            <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>キャンセル済み</div>
+          </div>
         </div>
       )}
 
@@ -873,6 +894,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
             { key: "active", label: "実行中" },
             { key: "completed", label: "完了" },
             { key: "failed", label: "失敗" },
+            { key: "cancelled", label: "キャンセル済み" },
           ].map((f) => (
             <button
               key={f.key}

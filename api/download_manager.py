@@ -257,7 +257,16 @@ class DownloadManager:
             new_files = files_after - files_before
             
             with self.lock:
+                # Check if download was cancelled before updating status
+                current_status = self.downloads[download_id].get("status")
+                if current_status == "cancelled":
+                    # Don't overwrite cancelled status
+                    return
+                
                 if return_code == 0:
+                    # Double-check status wasn't cancelled during processing
+                    if self.downloads[download_id].get("status") == "cancelled":
+                        return
                     # Check if files were actually created
                     if new_files:
                         self.downloads[download_id]["status"] = "completed"
@@ -279,28 +288,34 @@ class DownloadManager:
                         print(f"Warning: spotDL returned 0 but no files were created in {self.download_folder}")
                         print(f"Full output: {full_output}")
                 else:
-                    self.downloads[download_id]["status"] = "failed"
-                    self.downloads[download_id]["message"] = f"Download failed with code {return_code}"
-                    self.downloads[download_id]["error"] = full_output if full_output else f"Process exited with code {return_code}"
-                    self.downloads[download_id]["completed_at"] = datetime.now().isoformat()
-                    print(f"Error: spotDL failed with return code {return_code}")
-                    print(f"Full output: {full_output}")
+                    # Check again if status was cancelled during the lock
+                    if self.downloads[download_id].get("status") != "cancelled":
+                        self.downloads[download_id]["status"] = "failed"
+                        self.downloads[download_id]["message"] = f"Download failed with code {return_code}"
+                        self.downloads[download_id]["error"] = full_output if full_output else f"Process exited with code {return_code}"
+                        self.downloads[download_id]["completed_at"] = datetime.now().isoformat()
+                        print(f"Error: spotDL failed with return code {return_code}")
+                        print(f"Full output: {full_output}")
         
         except FileNotFoundError as e:
             # spotDL command not found
             with self.lock:
-                self.downloads[download_id]["status"] = "failed"
-                error_msg = str(e)
-                self.downloads[download_id]["message"] = "spotDLが見つかりません"
-                self.downloads[download_id]["error"] = error_msg
-                self.downloads[download_id]["completed_at"] = datetime.now().isoformat()
+                # Don't overwrite cancelled status
+                if self.downloads[download_id].get("status") != "cancelled":
+                    self.downloads[download_id]["status"] = "failed"
+                    error_msg = str(e)
+                    self.downloads[download_id]["message"] = "spotDLが見つかりません"
+                    self.downloads[download_id]["error"] = error_msg
+                    self.downloads[download_id]["completed_at"] = datetime.now().isoformat()
         except Exception as e:
             with self.lock:
-                self.downloads[download_id]["status"] = "failed"
-                error_msg = str(e)
-                self.downloads[download_id]["message"] = f"エラー: {error_msg}"
-                self.downloads[download_id]["error"] = error_msg
-                self.downloads[download_id]["completed_at"] = datetime.now().isoformat()
+                # Don't overwrite cancelled status
+                if self.downloads[download_id].get("status") != "cancelled":
+                    self.downloads[download_id]["status"] = "failed"
+                    error_msg = str(e)
+                    self.downloads[download_id]["message"] = f"エラー: {error_msg}"
+                    self.downloads[download_id]["error"] = error_msg
+                    self.downloads[download_id]["completed_at"] = datetime.now().isoformat()
     
     def get_status(self, download_id: Optional[str] = None) -> Dict:
         """
