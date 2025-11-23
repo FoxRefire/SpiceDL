@@ -1,0 +1,41 @@
+# Build artifacts
+build/
+dist/
+*.spec.bak
+*.pyc
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# PyInstaller
+*.manifest
+*.spec.bak
+# Keep spotdl-api.spec for building
+!spotdl-api.spec
+
+# Py2App
+*.app
+*.dmg
+
+# Package files
+*.deb
+*.rpm
+*.exe
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+

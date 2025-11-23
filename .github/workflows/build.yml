@@ -1,0 +1,302 @@
+name: Build Packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number'
+        required: true
+        default: '1.0.0'
+
+env:
+  APP_NAME: spotdl-api
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  build-windows:
+    name: Build Windows Executable
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        run: |
+          cd api
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+      
+      - name: Install spotdl
+        run: |
+          cd api
+          pip install spotdl
+      
+      - name: Verify files
+        run: |
+          cd api
+          Get-Location
+          Write-Host "Files in api directory:"
+          Get-ChildItem -Name
+          if (Test-Path "spotdl-api.spec") {
+            Write-Host "✓ spotdl-api.spec found"
+          } else {
+            Write-Host "✗ spotdl-api.spec NOT found"
+            exit 1
+          }
+          if (Test-Path "app.py") {
+            Write-Host "✓ app.py found"
+          } else {
+            Write-Host "✗ app.py NOT found"
+            exit 1
+          }
+      
+      - name: Build executable
+        run: |
+          cd api
+          pyinstaller spotdl-api.spec --clean --noconfirm
+      
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: api/dist/spotdl-api.exe
+          retention-days: 30
+          if-no-files-found: error
+
+  build-macos:
+    name: Build macOS App
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        run: |
+          cd api
+          python3 -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install py2app
+      
+      - name: Install spotdl
+        run: |
+          cd api
+          pip install spotdl
+      
+      - name: Build app bundle
+        run: |
+          cd api
+          python3 setup_macos.py py2app
+      
+      - name: List build output
+        run: |
+          cd api
+          echo "Contents of dist directory:"
+          ls -la dist/ || echo "dist directory not found"
+          echo ""
+          echo "Looking for .app bundles:"
+          find dist -name "*.app" -type d || echo "No .app bundles found"
+          echo ""
+          echo "All files in dist:"
+          find dist -type f || echo "No files found"
+      
+      - name: Create DMG (optional)
+        run: |
+          cd api
+          # Find the actual app bundle name (try different possible names)
+          APP_BUNDLE=""
+          for name in "spotDL API.app" "app.app" "spotdl-api.app"; do
+            if [ -d "dist/$name" ]; then
+              APP_BUNDLE="dist/$name"
+              break
+            fi
+          done
+          
+          # If not found by name, find any .app bundle
+          if [ -z "$APP_BUNDLE" ]; then
+            APP_BUNDLE=$(find dist -name "*.app" -type d | head -1)
+          fi
+          
+          if [ -n "$APP_BUNDLE" ] && [ -d "$APP_BUNDLE" ]; then
+            echo "Found app bundle: $APP_BUNDLE"
+            APP_NAME=$(basename "$APP_BUNDLE" .app)
+            DMG_NAME="dist/${APP_NAME}.dmg"
+            hdiutil create -volname "$APP_NAME" -srcfolder "$APP_BUNDLE" -ov -format UDZO "$DMG_NAME" || echo "DMG creation failed (non-fatal)"
+            if [ -f "$DMG_NAME" ]; then
+              echo "DMG created: $DMG_NAME"
+            fi
+          else
+            echo "No app bundle found to create DMG"
+          fi
+      
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-app
+          path: |
+            api/dist/*.app
+            api/dist/*.dmg
+          retention-days: 30
+          if-no-files-found: error
+
+  build-linux-deb:
+    name: Build Linux DEB Package
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ruby ruby-dev rubygems build-essential
+          sudo gem install fpm
+      
+      - name: Install Python dependencies
+        working-directory: api
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Install spotdl
+        working-directory: api
+        run: |
+          pip install spotdl
+      
+      - name: Build DEB package
+        working-directory: api
+        run: |
+          chmod +x build_linux.sh
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v} ./build_linux.sh
+          else
+            VERSION=${{ github.event.inputs.version || '1.0.0' }} ./build_linux.sh
+          fi
+      
+      - name: Upload DEB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-deb
+          path: api/dist/*.deb
+          retention-days: 30
+
+  build-linux-rpm:
+    name: Build Linux RPM Package
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ruby ruby-dev rubygems build-essential rpm
+          sudo gem install fpm
+      
+      - name: Install Python dependencies
+        working-directory: api
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Install spotdl
+        working-directory: api
+        run: |
+          pip install spotdl
+      
+      - name: Build RPM package
+        working-directory: api
+        run: |
+          chmod +x build_linux.sh
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v} ./build_linux.sh
+          else
+            VERSION=${{ github.event.inputs.version || '1.0.0' }} ./build_linux.sh
+          fi
+      
+      - name: Upload RPM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-rpm
+          path: api/dist/*.rpm
+          retention-days: 30
+
+  create-release:
+    name: Create Release
+    needs: [build-windows, build-macos, build-linux-deb, build-linux-rpm]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Extract version from tag
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          name: Release ${{ steps.get_version.outputs.version }}
+          body: |
+            ## spotDL API ${{ steps.get_version.outputs.version }}
+            
+            ### Downloads
+            - **Windows**: `spotdl-api.exe`
+            - **macOS**: `spotdl-api.app` (and `.dmg` if available)
+            - **Linux DEB**: `.deb` package for Debian/Ubuntu
+            - **Linux RPM**: `.rpm` package for RedHat/CentOS/Fedora
+            
+            ### Installation
+            - **Windows**: Download and run `spotdl-api.exe`
+            - **macOS**: Download and open `spotdl-api.app` or install from `.dmg`
+            - **Linux DEB**: `sudo dpkg -i spotdl-api_*.deb`
+            - **Linux RPM**: `sudo rpm -i spotdl-api-*.rpm`
+          files: |
+            artifacts/windows-exe/spotdl-api.exe
+            artifacts/macos-app/${{ env.APP_NAME }}.app
+            artifacts/macos-app/${{ env.APP_NAME }}.dmg
+            artifacts/linux-deb/*.deb
+            artifacts/linux-rpm/*.rpm
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
