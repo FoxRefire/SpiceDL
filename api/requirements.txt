@@ -1,6 +1,5 @@
 flask==3.0.0
 flask-cors==4.0.0
-pystray==0.19.5
-Pillow>=11.0.0
+PySide6>=6.5.0
 
 

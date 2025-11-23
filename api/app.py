@@ -13,12 +13,16 @@ import gui
 # Try to import tray_app, but make it optional
 try:
     import tray_app
+    from PySide6.QtWidgets import QApplication as QtApp
+    from PySide6.QtCore import QObject
     TRAY_AVAILABLE = True
 except (ImportError, ValueError) as e:
     print(f"Warning: System tray not available: {e}")
     print("Server will run without system tray icon.")
     TRAY_AVAILABLE = False
     tray_app = None
+    QtApp = None
+    QObject = None
 
 
 class Application:
@@ -26,8 +30,8 @@ class Application:
     
     def __init__(self):
         self.server_thread = None
-        self.tray_thread = None
         self.tray = None
+        self.qt_app = None
     
     def start_server(self):
         """Start the Flask server in a separate thread"""
@@ -44,40 +48,58 @@ class Application:
             print("System tray is not available. Skipping tray icon.")
             return
         
-        def run_tray():
+        try:
+            # Create QApplication in main thread (required for PySide6)
+            if QtApp.instance() is None:
+                print("Creating QApplication...")
+                self.qt_app = QtApp([])
+            else:
+                print("Using existing QApplication instance")
+                self.qt_app = QtApp.instance()
+            
+            # Configure QApplication to not quit when last window is closed
+            # This allows the application to continue running with just the tray icon
+            self.qt_app.setQuitOnLastWindowClosed(False)
+            print("QApplication configured to continue running when windows are closed")
+            
+            # Initialize GUI signal in main thread (required for cross-thread communication)
+            # This must be done after QApplication is created
+            gui._initialize_signal_in_main_thread()
+            
+            # Create tray app
+            print("Creating tray app...")
             self.tray = tray_app.create_tray_app(
                 self.server_thread,
                 config_manager,
                 download_manager,
                 gui
             )
+            print("Starting tray app...")
             self.tray.run()
-        
-        self.tray_thread = threading.Thread(target=run_tray, daemon=False)
-        self.tray_thread.start()
+        except Exception as e:
+            print(f"Error starting tray app: {e}")
+            import traceback
+            traceback.print_exc()
+            # Continue without tray
+            print("Continuing without system tray...")
     
     def run(self):
         """Run the application"""
         # Start server
         self.start_server()
         
-        # Start system tray (if available)
-        self.start_tray()
-        
-        # Keep main thread alive
-        try:
-            if self.tray_thread:
-                self.tray_thread.join()
-            else:
-                # If no tray, just wait for keyboard interrupt
+        # Start system tray (if available) - this will run the Qt event loop
+        if TRAY_AVAILABLE:
+            self.start_tray()
+        else:
+            # If no tray, just wait for keyboard interrupt
+            try:
                 while True:
                     import time
                     time.sleep(1)
-        except KeyboardInterrupt:
-            print("\nShutting down...")
-            if self.tray:
-                self.tray.quit_app()
-            sys.exit(0)
+            except KeyboardInterrupt:
+                print("\nShutting down...")
+                sys.exit(0)
 
 
 def main():

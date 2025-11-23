@@ -1,420 +1,691 @@
 """
-GUI settings window using tkinter
+GUI settings window using PySide6
 """
-import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from PySide6.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QLabel, QLineEdit, QPushButton, QFileDialog, QMessageBox,
+    QFrame, QScrollArea
+)
+from PySide6.QtCore import Qt, QThread, Signal, QObject, QTimer, QMetaObject, QEvent
+from PySide6.QtGui import QFont, QIcon, QCloseEvent
 from config_manager import ConfigManager
 import threading
 import os
 from pathlib import Path
 
 
-class SettingsGUI:
+class ConfigChangedSignal(QObject):
+    """Signal object for config changes"""
+    changed = Signal()
+
+
+class SettingsWindowSignal(QObject):
+    """Signal object for opening settings window from other threads"""
+    open_settings = Signal(object, object)  # config_manager, on_config_changed
+
+
+class SettingsWindowEvent(QEvent):
+    """Custom event for opening settings window"""
+    EventType = QEvent.Type(QEvent.registerEventType())
+    
+    def __init__(self, config_manager, on_config_changed):
+        super().__init__(SettingsWindowEvent.EventType)
+        self.config_manager = config_manager
+        self.on_config_changed = on_config_changed
+
+
+class SettingsEventReceiver(QObject):
+    """Event receiver for settings window events"""
+    
+    def __init__(self):
+        super().__init__()
+    
+    def customEvent(self, event):
+        """Handle custom events"""
+        if isinstance(event, SettingsWindowEvent):
+            _create_settings_window_impl(event.config_manager, event.on_config_changed)
+            return True
+        return super().customEvent(event)
+
+
+# Global event receiver
+_event_receiver = None
+
+
+class SettingsGUI(QMainWindow):
     """Settings window for configuring the application"""
     
     def __init__(self, config_manager: ConfigManager, on_config_changed=None):
+        super().__init__()
         self.config_manager = config_manager
         self.on_config_changed = on_config_changed
-        self.root = tk.Tk()
-        self.root.title("spotDL API Settings")
-        self.root.geometry("870x770")
-        self.root.resizable(True, True)
+        self.signal_obj = ConfigChangedSignal()
         
         # Modern color scheme
-        self.bg_color = "#1e1e1e"
-        self.card_bg = "#2d2d2d"
-        self.text_color = "#e0e0e0"
+        self.bg_color = "#1a1a1a"
+        self.card_bg = "#252525"
+        self.text_color = "#e8e8e8"
+        self.text_secondary = "#b0b0b0"
         self.accent_color = "#1db954"  # Spotify green
         self.accent_hover = "#1ed760"
-        self.border_color = "#404040"
-        self.input_bg = "#3a3a3a"
-        self.input_focus = "#4a4a4a"
+        self.accent_pressed = "#1aa34a"
+        self.border_color = "#3a3a3a"
+        self.input_bg = "#2a2a2a"
+        self.input_focus = "#333333"
+        self.error_color = "#e74c3c"
         
-        # Configure root background
-        self.root.configure(bg=self.bg_color)
+        self.setWindowTitle("spotDL API Settings")
+        self.setMinimumSize(900, 700)
+        self.resize(900, 700)
+        
+        # Setup UI
+        self.setup_ui()
+        self.load_settings()
         
         # Center window
         self._center_window()
         
-        self.setup_styles()
-        self.setup_ui()
-        self.load_settings()
+        # Set window flags to prevent closing the application when window is closed
+        # The window should just hide, not quit the application
+        self.setAttribute(Qt.WA_DeleteOnClose, False)
     
     def _center_window(self):
         """Center the window on screen"""
-        self.root.update_idletasks()
-        width = self.root.winfo_width()
-        height = self.root.winfo_height()
-        x = (self.root.winfo_screenwidth() // 2) - (width // 2)
-        y = (self.root.winfo_screenheight() // 2) - (height // 2)
-        self.root.geometry(f"{width}x{height}+{x}+{y}")
-    
-    def setup_styles(self):
-        """Setup modern ttk styles"""
-        style = ttk.Style()
-        
-        # Try to use a modern theme
-        try:
-            style.theme_use("clam")
-        except:
-            pass
-        
-        # Configure styles
-        style.configure("Card.TFrame", background=self.card_bg, relief=tk.FLAT)
-        style.configure("Title.TLabel", 
-                       background=self.card_bg,
-                       foreground=self.text_color,
-                       font=("Segoe UI", 18, "bold"))
-        style.configure("Section.TLabel",
-                       background=self.card_bg,
-                       foreground=self.text_color,
-                       font=("Segoe UI", 11, "bold"))
-        style.configure("Field.TLabel",
-                       background=self.card_bg,
-                       foreground=self.text_color,
-                       font=("Segoe UI", 9))
-        style.configure("Modern.TEntry",
-                       fieldbackground=self.input_bg,
-                       foreground=self.text_color,
-                       borderwidth=1,
-                       relief=tk.SOLID,
-                       insertcolor=self.text_color,
-                       font=("Segoe UI", 9))
-        style.map("Modern.TEntry",
-                 focusbackground=[("focus", self.input_focus)],
-                 bordercolor=[("focus", self.accent_color)])
-        style.configure("Primary.TButton",
-                       background=self.accent_color,
-                       foreground="white",
-                       borderwidth=0,
-                       focuscolor="none",
-                       font=("Segoe UI", 10, "bold"),
-                       padding=(20, 10))
-        style.map("Primary.TButton",
-                 background=[("active", self.accent_hover),
-                           ("pressed", self.accent_color)])
-        style.configure("Secondary.TButton",
-                       background=self.input_bg,
-                       foreground=self.text_color,
-                       borderwidth=1,
-                       focuscolor="none",
-                       font=("Segoe UI", 10),
-                       padding=(20, 10))
-        style.map("Secondary.TButton",
-                 background=[("active", self.input_focus)])
-        style.configure("Browse.TButton",
-                       background=self.input_bg,
-                       foreground=self.text_color,
-                       borderwidth=1,
-                       focuscolor="none",
-                       font=("Segoe UI", 9),
-                       padding=(12, 6))
-        style.map("Browse.TButton",
-                 background=[("active", self.input_focus)])
-    
-    def create_card(self, parent, row, column, columnspan=1, padx=0, pady=0):
-        """Create a modern card container with border"""
-        # Outer frame for border effect
-        card_outer = tk.Frame(parent, bg=self.border_color, padx=1, pady=1)
-        card_outer.grid(row=row, column=column, columnspan=columnspan, 
-                       sticky=(tk.W, tk.E, tk.N, tk.S), padx=padx, pady=pady)
-        
-        # Inner frame for content
-        card = tk.Frame(card_outer, bg=self.card_bg, padx=20, pady=20)
-        card.pack(fill=tk.BOTH, expand=True)
-        
-        return card
-    
-    def create_field(self, parent, label_text, row, icon=""):
-        """Create a modern form field"""
-        # Label
-        label = ttk.Label(parent, text=f"{icon} {label_text}", style="Field.TLabel")
-        label.grid(row=row, column=0, sticky=tk.W, pady=(0, 8))
-        
-        # Input frame
-        input_frame = ttk.Frame(parent, style="Card.TFrame")
-        input_frame.grid(row=row+1, column=0, sticky=(tk.W, tk.E), pady=(0, 16))
-        
-        return input_frame
+        frame_geometry = self.frameGeometry()
+        screen = QApplication.primaryScreen().availableGeometry().center()
+        frame_geometry.moveCenter(screen)
+        self.move(frame_geometry.topLeft())
     
     def setup_ui(self):
         """Setup the UI components"""
-        # Main container with padding
-        main_container = tk.Frame(self.root, bg=self.bg_color, padx=30, pady=30)
-        main_container.pack(fill=tk.BOTH, expand=True)
+        # Central widget
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        
+        # Main layout
+        main_layout = QVBoxLayout(central_widget)
+        main_layout.setContentsMargins(40, 40, 40, 40)
+        main_layout.setSpacing(0)
         
         # Title section
-        title_frame = tk.Frame(main_container, bg=self.bg_color)
-        title_frame.pack(fill=tk.X, pady=(0, 20))
+        title_frame = QWidget()
+        title_layout = QVBoxLayout(title_frame)
+        title_layout.setContentsMargins(0, 0, 0, 0)
+        title_layout.setSpacing(8)
         
-        title_label = tk.Label(
-            title_frame,
-            text="⚙️ spotDL API Settings",
-            bg=self.bg_color,
-            fg=self.text_color,
-            font=("Segoe UI", 24, "bold")
-        )
-        title_label.pack(anchor=tk.W)
+        title_label = QLabel("spotDL API Settings")
+        title_label.setStyleSheet(f"""
+            color: {self.text_color};
+            font-size: 28px;
+            font-weight: 600;
+            background-color: {self.bg_color};
+            padding: 0px;
+        """)
+        title_layout.addWidget(title_label)
         
-        subtitle_label = tk.Label(
-            title_frame,
-            text="Configure your download settings and server preferences",
-            bg=self.bg_color,
-            fg="#a0a0a0",
-            font=("Segoe UI", 10)
-        )
-        subtitle_label.pack(anchor=tk.W, pady=(5, 0))
+        subtitle_label = QLabel("Configure your download settings and server preferences")
+        subtitle_label.setStyleSheet(f"""
+            color: {self.text_secondary};
+            font-size: 13px;
+            background-color: {self.bg_color};
+            padding: 0px;
+        """)
+        title_layout.addWidget(subtitle_label)
         
-        # Main content area (scrollable)
-        content_frame = tk.Frame(main_container, bg=self.bg_color)
-        content_frame.pack(fill=tk.BOTH, expand=True)
-        content_frame.columnconfigure(0, weight=1)
+        main_layout.addWidget(title_frame)
+        main_layout.addSpacing(32)
+        
+        # Scrollable content area
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QFrame.NoFrame)
+        scroll_area.setStyleSheet(f"""
+            QScrollArea {{
+                background-color: {self.bg_color};
+                border: none;
+            }}
+            QScrollBar:vertical {{
+                background-color: {self.card_bg};
+                width: 10px;
+                border: none;
+                border-radius: 5px;
+            }}
+            QScrollBar::handle:vertical {{
+                background-color: {self.border_color};
+                border-radius: 5px;
+                min-height: 20px;
+            }}
+            QScrollBar::handle:vertical:hover {{
+                background-color: {self.input_bg};
+            }}
+        """)
+        
+        content_widget = QWidget()
+        content_layout = QVBoxLayout(content_widget)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(20)
         
         # Download Settings Card
-        download_card = self.create_card(content_frame, 0, 0, padx=0, pady=(0, 15))
-        download_card.columnconfigure(0, weight=1)
+        download_card = self.create_card()
+        download_layout = QVBoxLayout(download_card)
+        download_layout.setContentsMargins(24, 24, 24, 24)
+        download_layout.setSpacing(16)
         
-        section_title = tk.Label(
-            download_card,
-            text="📁 Download Settings",
-            bg=self.card_bg,
-            fg=self.text_color,
-            font=("Segoe UI", 12, "bold")
-        )
-        section_title.grid(row=0, column=0, sticky=tk.W, pady=(0, 20))
+        section_title = QLabel("Download Settings")
+        section_title.setStyleSheet(f"""
+            color: {self.text_color};
+            font-size: 16px;
+            font-weight: 600;
+            background-color: {self.card_bg};
+            padding: 0px;
+        """)
+        download_layout.addWidget(section_title)
+        download_layout.addSpacing(4)
         
         # Download folder field
-        folder_label = tk.Label(
-            download_card,
-            text="📂 Download Folder",
-            bg=self.card_bg,
-            fg=self.text_color,
-            font=("Segoe UI", 9)
-        )
-        folder_label.grid(row=1, column=0, sticky=tk.W, pady=(0, 8))
+        folder_label = QLabel("Download Folder")
+        folder_label.setStyleSheet(f"""
+            color: {self.text_color};
+            font-size: 13px;
+            font-weight: 500;
+            background-color: {self.card_bg};
+            padding: 0px;
+        """)
+        download_layout.addWidget(folder_label)
+        download_layout.addSpacing(8)
         
-        folder_input_frame = tk.Frame(download_card, bg=self.card_bg)
-        folder_input_frame.grid(row=2, column=0, sticky=(tk.W, tk.E), pady=(0, 20))
-        folder_input_frame.columnconfigure(0, weight=1)
+        folder_input_layout = QHBoxLayout()
+        folder_input_layout.setSpacing(12)
         
-        self.folder_var = tk.StringVar()
-        folder_entry = tk.Entry(
-            folder_input_frame,
-            textvariable=self.folder_var,
-            bg=self.input_bg,
-            fg=self.text_color,
-            insertbackground=self.text_color,
-            selectbackground=self.accent_color,
-            selectforeground="white",
-            borderwidth=1,
-            relief=tk.SOLID,
-            highlightthickness=1,
-            highlightcolor=self.accent_color,
-            highlightbackground=self.border_color,
-            font=("Segoe UI", 9),
-            bd=0
-        )
-        folder_entry.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 10), ipady=8)
+        self.folder_var = QLineEdit()
+        self.folder_var.setPlaceholderText("Select a folder for downloads...")
+        self.folder_var.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: {self.input_bg};
+                color: {self.text_color};
+                border: 2px solid {self.border_color};
+                border-radius: 6px;
+                padding: 12px 16px;
+                font-size: 13px;
+                selection-background-color: {self.accent_color};
+                selection-color: white;
+            }}
+            QLineEdit:focus {{
+                background-color: {self.input_focus};
+                border: 2px solid {self.accent_color};
+            }}
+            QLineEdit:hover {{
+                border: 2px solid {self.input_focus};
+            }}
+        """)
+        folder_input_layout.addWidget(self.folder_var, 1)
         
-        browse_btn = tk.Button(
-            folder_input_frame,
-            text="参照...",
-            command=self.browse_folder,
-            bg=self.input_bg,
-            fg=self.text_color,
-            activebackground=self.input_focus,
-            activeforeground=self.text_color,
-            borderwidth=1,
-            relief=tk.SOLID,
-            highlightthickness=0,
-            font=("Segoe UI", 9),
-            cursor="hand2",
-            padx=12,
-            pady=6
-        )
-        browse_btn.grid(row=0, column=1)
+        browse_btn = QPushButton("Browse...")
+        browse_btn.setMinimumWidth(100)
+        browse_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {self.input_bg};
+                color: {self.text_color};
+                border: 2px solid {self.border_color};
+                border-radius: 6px;
+                padding: 12px 20px;
+                font-size: 13px;
+                font-weight: 500;
+            }}
+            QPushButton:hover {{
+                background-color: {self.input_focus};
+                border: 2px solid {self.border_color};
+            }}
+            QPushButton:pressed {{
+                background-color: {self.input_bg};
+            }}
+        """)
+        browse_btn.clicked.connect(self.browse_folder)
+        folder_input_layout.addWidget(browse_btn)
+        
+        download_layout.addLayout(folder_input_layout)
+        content_layout.addWidget(download_card)
         
         # Server Settings Card
-        server_card = self.create_card(content_frame, 1, 0, padx=0, pady=(0, 15))
-        server_card.columnconfigure(0, weight=1)
+        server_card = self.create_card()
+        server_layout = QVBoxLayout(server_card)
+        server_layout.setContentsMargins(24, 24, 24, 24)
+        server_layout.setSpacing(16)
         
-        server_title = tk.Label(
-            server_card,
-            text="🌐 Server Settings",
-            bg=self.card_bg,
-            fg=self.text_color,
-            font=("Segoe UI", 12, "bold")
-        )
-        server_title.grid(row=0, column=0, sticky=tk.W, pady=(0, 20))
+        server_title = QLabel("Server Settings")
+        server_title.setStyleSheet(f"""
+            color: {self.text_color};
+            font-size: 16px;
+            font-weight: 600;
+            background-color: {self.card_bg};
+            padding: 0px;
+        """)
+        server_layout.addWidget(server_title)
+        server_layout.addSpacing(4)
         
         # Host field
-        host_label = tk.Label(
-            server_card,
-            text="🖥️ Host Address",
-            bg=self.card_bg,
-            fg=self.text_color,
-            font=("Segoe UI", 9)
-        )
-        host_label.grid(row=1, column=0, sticky=tk.W, pady=(0, 8))
+        host_label = QLabel("Host Address")
+        host_label.setStyleSheet(f"""
+            color: {self.text_color};
+            font-size: 13px;
+            font-weight: 500;
+            background-color: {self.card_bg};
+            padding: 0px;
+        """)
+        server_layout.addWidget(host_label)
+        server_layout.addSpacing(8)
         
-        self.host_var = tk.StringVar()
-        host_entry = tk.Entry(
-            server_card,
-            textvariable=self.host_var,
-            bg=self.input_bg,
-            fg=self.text_color,
-            insertbackground=self.text_color,
-            selectbackground=self.accent_color,
-            selectforeground="white",
-            borderwidth=1,
-            relief=tk.SOLID,
-            highlightthickness=1,
-            highlightcolor=self.accent_color,
-            highlightbackground=self.border_color,
-            font=("Segoe UI", 9),
-            bd=0
-        )
-        host_entry.grid(row=2, column=0, sticky=(tk.W, tk.E), pady=(0, 20), ipady=8)
+        self.host_var = QLineEdit()
+        self.host_var.setPlaceholderText("127.0.0.1")
+        self.host_var.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: {self.input_bg};
+                color: {self.text_color};
+                border: 2px solid {self.border_color};
+                border-radius: 6px;
+                padding: 12px 16px;
+                font-size: 13px;
+                selection-background-color: {self.accent_color};
+                selection-color: white;
+            }}
+            QLineEdit:focus {{
+                background-color: {self.input_focus};
+                border: 2px solid {self.accent_color};
+            }}
+            QLineEdit:hover {{
+                border: 2px solid {self.input_focus};
+            }}
+        """)
+        server_layout.addWidget(self.host_var)
+        server_layout.addSpacing(16)
         
         # Port field
-        port_label = tk.Label(
-            server_card,
-            text="🔌 Port Number",
-            bg=self.card_bg,
-            fg=self.text_color,
-            font=("Segoe UI", 9)
-        )
-        port_label.grid(row=3, column=0, sticky=tk.W, pady=(0, 8))
+        port_label = QLabel("Port Number")
+        port_label.setStyleSheet(f"""
+            color: {self.text_color};
+            font-size: 13px;
+            font-weight: 500;
+            background-color: {self.card_bg};
+            padding: 0px;
+        """)
+        server_layout.addWidget(port_label)
+        server_layout.addSpacing(8)
         
-        self.port_var = tk.StringVar()
-        port_entry = tk.Entry(
-            server_card,
-            textvariable=self.port_var,
-            bg=self.input_bg,
-            fg=self.text_color,
-            insertbackground=self.text_color,
-            selectbackground=self.accent_color,
-            selectforeground="white",
-            borderwidth=1,
-            relief=tk.SOLID,
-            highlightthickness=1,
-            highlightcolor=self.accent_color,
-            highlightbackground=self.border_color,
-            font=("Segoe UI", 9),
-            bd=0
-        )
-        port_entry.grid(row=4, column=0, sticky=(tk.W, tk.E), pady=(0, 0), ipady=8)
+        self.port_var = QLineEdit()
+        self.port_var.setPlaceholderText("5985")
+        self.port_var.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: {self.input_bg};
+                color: {self.text_color};
+                border: 2px solid {self.border_color};
+                border-radius: 6px;
+                padding: 12px 16px;
+                font-size: 13px;
+                selection-background-color: {self.accent_color};
+                selection-color: white;
+            }}
+            QLineEdit:focus {{
+                background-color: {self.input_focus};
+                border: 2px solid {self.accent_color};
+            }}
+            QLineEdit:hover {{
+                border: 2px solid {self.input_focus};
+            }}
+        """)
+        server_layout.addWidget(self.port_var)
+        
+        content_layout.addWidget(server_card)
+        
+        scroll_area.setWidget(content_widget)
+        main_layout.addWidget(scroll_area, 1)
         
         # Button section
-        button_frame = tk.Frame(main_container, bg=self.bg_color)
-        button_frame.pack(fill=tk.X, pady=(10, 0))
+        button_frame = QWidget()
+        button_layout = QHBoxLayout(button_frame)
+        button_layout.setContentsMargins(0, 24, 0, 0)
+        button_layout.setSpacing(12)
+        button_layout.addStretch()
         
-        # Button container for alignment
-        button_container = tk.Frame(button_frame, bg=self.bg_color)
-        button_container.pack(anchor=tk.E)
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.setMinimumWidth(120)
+        cancel_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {self.input_bg};
+                color: {self.text_color};
+                border: 2px solid {self.border_color};
+                border-radius: 6px;
+                padding: 12px 24px;
+                font-size: 13px;
+                font-weight: 500;
+            }}
+            QPushButton:hover {{
+                background-color: {self.input_focus};
+                border: 2px solid {self.border_color};
+            }}
+            QPushButton:pressed {{
+                background-color: {self.input_bg};
+            }}
+        """)
+        cancel_btn.clicked.connect(self.close)
+        button_layout.addWidget(cancel_btn)
         
-        cancel_btn = tk.Button(
-            button_container,
-            text="キャンセル",
-            command=self.root.destroy,
-            bg=self.input_bg,
-            fg=self.text_color,
-            activebackground=self.input_focus,
-            activeforeground=self.text_color,
-            borderwidth=1,
-            relief=tk.SOLID,
-            highlightthickness=0,
-            font=("Segoe UI", 10),
-            cursor="hand2",
-            padx=20,
-            pady=10
-        )
-        cancel_btn.pack(side=tk.RIGHT, padx=(10, 0))
+        save_btn = QPushButton("Save")
+        save_btn.setMinimumWidth(120)
+        save_btn.setDefault(True)
+        save_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {self.accent_color};
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 12px 24px;
+                font-size: 13px;
+                font-weight: 600;
+            }}
+            QPushButton:hover {{
+                background-color: {self.accent_hover};
+            }}
+            QPushButton:pressed {{
+                background-color: {self.accent_pressed};
+            }}
+            QPushButton:focus {{
+                outline: 2px solid {self.accent_color};
+                outline-offset: 2px;
+            }}
+        """)
+        save_btn.clicked.connect(self.save_settings)
+        button_layout.addWidget(save_btn)
         
-        save_btn = tk.Button(
-            button_container,
-            text="保存",
-            command=self.save_settings,
-            bg=self.accent_color,
-            fg="white",
-            activebackground=self.accent_hover,
-            activeforeground="white",
-            borderwidth=0,
-            relief=tk.FLAT,
-            highlightthickness=0,
-            font=("Segoe UI", 10, "bold"),
-            cursor="hand2",
-            padx=20,
-            pady=10
-        )
-        save_btn.pack(side=tk.RIGHT)
+        main_layout.addWidget(button_frame)
         
-        # Configure grid weights
-        content_frame.columnconfigure(0, weight=1)
-        self.root.columnconfigure(0, weight=1)
-        self.root.rowconfigure(0, weight=1)
+        # Set main window background and style
+        self.setStyleSheet(f"""
+            QMainWindow {{
+                background-color: {self.bg_color};
+            }}
+        """)
+    
+    def create_card(self):
+        """Create a modern card container with border"""
+        card = QFrame()
+        card.setFrameShape(QFrame.NoFrame)
+        card.setStyleSheet(f"""
+            QFrame {{
+                background-color: {self.card_bg};
+                border: 1px solid {self.border_color};
+                border-radius: 8px;
+            }}
+        """)
+        return card
     
     def browse_folder(self):
         """Open folder browser dialog"""
-        folder = filedialog.askdirectory(
-            title="Select Download Folder",
-            initialdir=self.folder_var.get() or str(Path.home())
+        folder = QFileDialog.getExistingDirectory(
+            self,
+            "Select Download Folder",
+            self.folder_var.text() or str(Path.home())
         )
         if folder:
-            self.folder_var.set(folder)
+            self.folder_var.setText(folder)
     
     def load_settings(self):
         """Load settings from config"""
         config = self.config_manager.get_all()
-        self.folder_var.set(config.get("download_folder", ""))
-        self.host_var.set(config.get("host", "127.0.0.1"))
-        self.port_var.set(str(config.get("port", 5985)))
+        self.folder_var.setText(config.get("download_folder", ""))
+        self.host_var.setText(config.get("host", "127.0.0.1"))
+        self.port_var.setText(str(config.get("port", 5985)))
     
     def save_settings(self):
         """Save settings to config"""
         try:
             # Validate port
-            port = int(self.port_var.get())
+            port_text = self.port_var.text().strip()
+            if not port_text:
+                raise ValueError("Port number is required")
+            
+            port = int(port_text)
             if port < 1 or port > 65535:
                 raise ValueError("Port must be between 1 and 65535")
             
             # Validate folder
-            folder = self.folder_var.get()
+            folder = self.folder_var.text().strip()
             if not folder:
                 raise ValueError("Download folder is required")
             
+            # Validate host
+            host = self.host_var.text().strip()
+            if not host:
+                raise ValueError("Host address is required")
+            
             # Save settings
             self.config_manager.set("download_folder", folder)
-            self.config_manager.set("host", self.host_var.get())
+            self.config_manager.set("host", host)
             self.config_manager.set("port", port)
             
-            messagebox.showinfo("Success", "Settings saved successfully!")
+            msg = QMessageBox(self)
+            msg.setIcon(QMessageBox.Information)
+            msg.setWindowTitle("Success")
+            msg.setText("Settings saved successfully!")
+            msg.setStyleSheet(f"""
+                QMessageBox {{
+                    background-color: {self.bg_color};
+                }}
+                QMessageBox QLabel {{
+                    color: {self.text_color};
+                    font-size: 13px;
+                }}
+                QPushButton {{
+                    background-color: {self.accent_color};
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    padding: 8px 16px;
+                    font-size: 13px;
+                    font-weight: 500;
+                    min-width: 80px;
+                }}
+                QPushButton:hover {{
+                    background-color: {self.accent_hover};
+                }}
+            """)
+            msg.exec()
             
             # Notify callback if provided
             if self.on_config_changed:
                 self.on_config_changed()
             
-            self.root.destroy()
+            self.close()
         
         except ValueError as e:
-            messagebox.showerror("Error", f"Invalid input: {str(e)}")
+            msg = QMessageBox(self)
+            msg.setIcon(QMessageBox.Critical)
+            msg.setWindowTitle("Error")
+            msg.setText(f"Invalid input: {str(e)}")
+            msg.setStyleSheet(f"""
+                QMessageBox {{
+                    background-color: {self.bg_color};
+                }}
+                QMessageBox QLabel {{
+                    color: {self.text_color};
+                    font-size: 13px;
+                }}
+                QPushButton {{
+                    background-color: {self.error_color};
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    padding: 8px 16px;
+                    font-size: 13px;
+                    font-weight: 500;
+                    min-width: 80px;
+                }}
+                QPushButton:hover {{
+                    background-color: #c0392b;
+                }}
+            """)
+            msg.exec()
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to save settings: {str(e)}")
+            msg = QMessageBox(self)
+            msg.setIcon(QMessageBox.Critical)
+            msg.setWindowTitle("Error")
+            msg.setText(f"Failed to save settings: {str(e)}")
+            msg.setStyleSheet(f"""
+                QMessageBox {{
+                    background-color: {self.bg_color};
+                }}
+                QMessageBox QLabel {{
+                    color: {self.text_color};
+                    font-size: 13px;
+                }}
+                QPushButton {{
+                    background-color: {self.error_color};
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    padding: 8px 16px;
+                    font-size: 13px;
+                    font-weight: 500;
+                    min-width: 80px;
+                }}
+                QPushButton:hover {{
+                    background-color: #c0392b;
+                }}
+            """)
+            msg.exec()
     
-    def show(self):
-        """Show the settings window"""
-        self.root.mainloop()
+    def closeEvent(self, event: QCloseEvent):
+        """Handle window close event - hide window instead of closing application"""
+        # Just hide the window, don't close it
+        # This prevents the application from quitting when the settings window is closed
+        event.ignore()
+        self.hide()
+        print("Settings window hidden (application continues running)")
+
+
+# Global window instance to prevent multiple windows
+_window_instance = None
+_settings_signal = None
+
+
+def _initialize_signal_in_main_thread():
+    """Initialize signal object in main thread (must be called from main thread)"""
+    global _settings_signal
+    if _settings_signal is None:
+        app = QApplication.instance()
+        if app is not None:
+            _settings_signal = SettingsWindowSignal()
+            # Connect signal to window creation function
+            _settings_signal.open_settings.connect(_create_settings_window_slot)
+            print("Settings window signal initialized in main thread")
+    return _settings_signal
+
+
+def _create_settings_window_slot(config_manager, on_config_changed):
+    """Slot function to create settings window (called from signal)"""
+    global _window_instance
+    try:
+        # If window already exists, bring it to front
+        if _window_instance is not None and _window_instance.isVisible():
+            _window_instance.raise_()
+            _window_instance.activateWindow()
+            print("Settings window already open, bringing to front")
+            return
+        
+        # Create new window
+        print("Creating settings window from signal...")
+        _window_instance = SettingsGUI(config_manager, on_config_changed)
+        _window_instance.show()
+        _window_instance.destroyed.connect(lambda: set_global_window(None))
+        print("Settings window created and shown")
+    except Exception as e:
+        print(f"Error creating settings window: {e}")
+        import traceback
+        traceback.print_exc()
+
+
+def set_global_window(value):
+    """Set global window instance"""
+    global _window_instance
+    _window_instance = value
+
+
+def _create_settings_window_impl(config_manager, on_config_changed):
+    """Internal implementation to create settings window"""
+    global _window_instance
+    try:
+        # If window already exists (even if hidden), show and bring it to front
+        if _window_instance is not None:
+            _window_instance.show()
+            _window_instance.raise_()
+            _window_instance.activateWindow()
+            print("Settings window already exists, showing and bringing to front")
+            return
+        
+        # Create new window
+        print("Creating settings window...")
+        _window_instance = SettingsGUI(config_manager, on_config_changed)
+        _window_instance.show()
+        # Don't connect destroyed signal - we want to keep the window instance
+        # even when it's hidden, so we can show it again later
+        print("Settings window created and shown")
+    except Exception as e:
+        print(f"Error creating settings window: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 def show_settings(config_manager: ConfigManager, on_config_changed=None):
     """Show settings window (thread-safe)"""
-    def run_gui():
-        app = SettingsGUI(config_manager, on_config_changed)
-        app.show()
+    global _window_instance, _settings_signal
     
-    # Run GUI in a separate thread
-    # Note: On some systems, tkinter may need to run in main thread
-    # This implementation should work on most platforms
-    thread = threading.Thread(target=run_gui, daemon=True)
-    thread.start()
-
+    # Get or create QApplication
+    app = QApplication.instance()
+    if app is None:
+        print("Warning: QApplication not found. Creating new instance.")
+        app = QApplication([])
+    
+    # Configure QApplication to not quit when last window is closed
+    # This allows the application to continue running with just the tray icon
+    app.setQuitOnLastWindowClosed(False)
+    
+    # Check if we're in the main thread
+    if threading.current_thread() is threading.main_thread():
+        # If in main thread, create window directly
+        _create_settings_window_impl(config_manager, on_config_changed)
+    else:
+        # If in another thread, use multiple methods to ensure it works
+        print(f"Calling from non-main thread: {threading.current_thread().name}")
+        
+        # Method 1: Try using signal/slot mechanism
+        try:
+            signal_obj = _initialize_signal_in_main_thread()
+            if signal_obj is not None:
+                print("Using signal/slot mechanism...")
+                signal_obj.open_settings.emit(config_manager, on_config_changed)
+                return
+        except Exception as e:
+            print(f"Signal/slot failed: {e}")
+        
+        # Method 2: Use custom event
+        try:
+            print("Using custom event mechanism...")
+            global _event_receiver
+            if _event_receiver is None:
+                _event_receiver = SettingsEventReceiver()
+            event = SettingsWindowEvent(config_manager, on_config_changed)
+            QApplication.postEvent(_event_receiver, event)
+            print("Custom event posted")
+            return
+        except Exception as e:
+            print(f"Custom event failed: {e}")
+            import traceback
+            traceback.print_exc()
+        
+        # Method 3: Use QTimer (fallback)
+        print("Using QTimer as fallback...")
+        # Store parameters in a way that can be accessed from the callback
+        def create_window_callback():
+            _create_settings_window_impl(config_manager, on_config_changed)
+        
+        QTimer.singleShot(0, create_window_callback)
+        print("Scheduled window creation via QTimer")
