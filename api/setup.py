@@ -31,6 +31,8 @@ OPTIONS = {
     'resources': [],  # Don't include unnecessary resources
     'frameworks': [],  # Don't bundle unnecessary frameworks
     'site_packages': False,  # Don't include entire site-packages
+    'alias': False,  # Don't create aliases
+    'no_chdir': False,  # Allow directory changes
     'excludes': [
         # Standard library modules not needed
         'tkinter',
