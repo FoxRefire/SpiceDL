@@ -8,6 +8,7 @@ from config_manager import ConfigManager
 import threading
 import sys
 import os
+import gui
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -87,10 +88,34 @@ def health():
     return jsonify({"status": "ok"}), 200
 
 
+@app.route("/open-settings", methods=["POST"])
+def open_settings():
+    """Open GUI settings window"""
+    try:
+        def on_config_changed():
+            """Callback when config is changed"""
+            # Update download manager folder if needed
+            new_folder = config_manager.get("download_folder")
+            if new_folder:
+                download_manager.download_folder = os.path.abspath(new_folder)
+                download_manager.download_folder.mkdir(parents=True, exist_ok=True)
+        
+        # Show settings window in a separate thread
+        gui.show_settings(config_manager, on_config_changed)
+        
+        return jsonify({
+            "success": True,
+            "message": "Settings window opened"
+        }), 200
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 def run_server(host=None, port=None):
     """Run the Flask server"""
     host = host or config_manager.get("host", "127.0.0.1")
-    port = port or config_manager.get("port", 5000)
+    port = port or config_manager.get("port", 5985)
     
     print(f"Starting server on {host}:{port}")
     app.run(host=host, port=port, debug=False, use_reloader=False)

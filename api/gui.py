@@ -106,7 +106,7 @@ class SettingsGUI:
         config = self.config_manager.get_all()
         self.folder_var.set(config.get("download_folder", ""))
         self.host_var.set(config.get("host", "127.0.0.1"))
-        self.port_var.set(str(config.get("port", 5000)))
+        self.port_var.set(str(config.get("port", 5985)))
     
     def save_settings(self):
         """Save settings to config"""

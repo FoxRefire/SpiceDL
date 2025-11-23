@@ -14,7 +14,7 @@ class ConfigManager:
         self.config_file = Path(config_file)
         self.default_config = {
             "download_folder": str(Path.home() / "Music" / "spotDL"),
-            "port": 5000,
+            "port": 5985,
             "host": "127.0.0.1"
         }
         self.config = self.load_config()
