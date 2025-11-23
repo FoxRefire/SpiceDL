@@ -1,8 +1,7 @@
 /**
  * API client for spotDL download service
  */
-
-const API_BASE_URL = "http://127.0.0.1:5985";
+import { getApiBaseUrl } from "./config";
 
 export interface DownloadResponse {
   success: boolean;
@@ -31,7 +30,7 @@ export interface AllStatusResponse {
  */
 export async function startDownload(url: string): Promise<DownloadResponse> {
   try {
-    const response = await fetch(`${API_BASE_URL}/download`, {
+    const response = await fetch(`${getApiBaseUrl()}/download`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -58,9 +57,10 @@ export async function getDownloadStatus(
   downloadId?: string
 ): Promise<DownloadStatus | AllStatusResponse> {
   try {
+    const baseUrl = getApiBaseUrl();
     const url = downloadId
-      ? `${API_BASE_URL}/status?id=${encodeURIComponent(downloadId)}`
-      : `${API_BASE_URL}/status`;
+      ? `${baseUrl}/status?id=${encodeURIComponent(downloadId)}`
+      : `${baseUrl}/status`;
 
     const response = await fetch(url);
 
@@ -81,7 +81,7 @@ export async function getDownloadStatus(
  */
 export async function cancelDownload(downloadId: string): Promise<void> {
   try {
-    const response = await fetch(`${API_BASE_URL}/cancel`, {
+    const response = await fetch(`${getApiBaseUrl()}/cancel`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -104,10 +104,32 @@ export async function cancelDownload(downloadId: string): Promise<void> {
  */
 export async function checkHealth(): Promise<boolean> {
   try {
-    const response = await fetch(`${API_BASE_URL}/health`);
+    const response = await fetch(`${getApiBaseUrl()}/health`);
     return response.ok;
   } catch (error) {
     return false;
+  }
+}
+
+/**
+ * Open GUI settings window
+ */
+export async function openSettings(): Promise<void> {
+  try {
+    const response = await fetch(`${getApiBaseUrl()}/open-settings`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || `HTTP error! status: ${response.status}`);
+    }
+  } catch (error) {
+    console.error("Error opening settings:", error);
+    throw error;
   }
 }
 

@@ -42,6 +42,7 @@ http://127.0.0.1:5000
 | GET | `/status` | ダウンロードの進行状況を取得 |
 | POST | `/cancel` | ダウンロードをキャンセル |
 | GET | `/health` | サーバーのヘルスチェック |
+| POST | `/open-settings` | GUI設定画面を開く |
 
 ## エンドポイント詳細
 
@@ -357,6 +358,70 @@ fetch('http://127.0.0.1:5000/cancel', {
   body: JSON.stringify({
     id: 'dl_20240101_120000_123456'
   })
+})
+.then(response => response.json())
+.then(data => console.log(data));
+```
+
+---
+
+### POST /open-settings
+
+GUI設定画面を開きます。このエンドポイントを呼び出すと、サーバー側で設定ウィンドウが表示されます。
+
+#### リクエスト
+
+**URL**: `http://127.0.0.1:5000/open-settings`
+
+**メソッド**: `POST`
+
+**ヘッダー**:
+```
+Content-Type: application/json
+```
+
+**ボディ**: なし（空のJSONオブジェクトでも可）
+
+#### レスポンス
+
+**成功時 (200 OK)**:
+```json
+{
+  "success": true,
+  "message": "Settings window opened"
+}
+```
+
+**エラー時 (500 Internal Server Error)**:
+```json
+{
+  "error": "Error message here"
+}
+```
+
+#### 使用例
+
+**cURL**:
+```bash
+curl -X POST http://127.0.0.1:5000/open-settings \
+  -H "Content-Type: application/json"
+```
+
+**Python (requests)**:
+```python
+import requests
+
+response = requests.post("http://127.0.0.1:5000/open-settings")
+print(response.json())
+```
+
+**JavaScript (fetch)**:
+```javascript
+fetch('http://127.0.0.1:5000/open-settings', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  }
 })
 .then(response => response.json())
 .then(data => console.log(data));

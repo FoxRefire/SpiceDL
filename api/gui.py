@@ -17,8 +17,8 @@ class SettingsGUI:
         self.on_config_changed = on_config_changed
         self.root = tk.Tk()
         self.root.title("spotDL API Settings")
-        self.root.geometry("500x300")
-        self.root.resizable(False, False)
+        self.root.geometry("700x500")
+        self.root.resizable(True, False)  # Allow horizontal resize
         
         # Center window
         self._center_window()
@@ -49,13 +49,13 @@ class SettingsGUI:
         folder_frame.grid(row=0, column=1, sticky=(tk.W, tk.E), pady=5, padx=5)
         
         self.folder_var = tk.StringVar()
-        folder_entry = ttk.Entry(folder_frame, textvariable=self.folder_var, width=40)
+        folder_entry = ttk.Entry(folder_frame, textvariable=self.folder_var, width=35)
         folder_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
         
         browse_btn = ttk.Button(
-            folder_frame, text="Browse...", command=self.browse_folder
+            folder_frame, text="参照...", command=self.browse_folder, width=10
         )
-        browse_btn.pack(side=tk.LEFT, padx=5)
+        browse_btn.pack(side=tk.LEFT, padx=(5, 0))
         
         # Host
         ttk.Label(main_frame, text="Host:").grid(

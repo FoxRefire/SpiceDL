@@ -19,6 +19,16 @@ download_manager = DownloadManager(
     download_folder=config_manager.get("download_folder")
 )
 
+# Check if spotDL is available on startup
+if download_manager.spotdl_command is None:
+    print("警告: spotDLが見つかりません。")
+    print("以下のコマンドでインストールしてください:")
+    print("  pip install spotdl")
+    print("または")
+    print("  pip install git+https://github.com/spotDL/spotify-downloader.git")
+else:
+    print(f"spotDLコマンドが見つかりました: {' '.join(download_manager.spotdl_command)}")
+
 
 @app.route("/download", methods=["POST"])
 def download():
@@ -95,9 +105,10 @@ def open_settings():
         def on_config_changed():
             """Callback when config is changed"""
             # Update download manager folder if needed
+            from pathlib import Path
             new_folder = config_manager.get("download_folder")
             if new_folder:
-                download_manager.download_folder = os.path.abspath(new_folder)
+                download_manager.download_folder = Path(new_folder).resolve()
                 download_manager.download_folder.mkdir(parents=True, exist_ok=True)
         
         # Show settings window in a separate thread

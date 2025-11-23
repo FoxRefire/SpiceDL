@@ -3,6 +3,7 @@
  */
 import * as API from "./api";
 import DownloadStatusPage from "./components/DownloadStatusPage";
+import SettingsPage from "./components/SettingsPage";
 
 const { React, ReactDOM } = Spicetify;
 
@@ -92,6 +93,41 @@ async function main() {
   );
   albumDownloadItem.register();
 
+  // Register context menu items for playlists
+  const playlistDownloadItem = new Spicetify.ContextMenu.Item(
+    "Download Playlist with spotDL",
+    async (uris) => {
+      for (const uri of uris) {
+        try {
+          const url = convertUriToUrl(uri);
+          if (!url) {
+            Spicetify.showNotification("無効なURIです", true);
+            continue;
+          }
+
+          const response = await API.startDownload(url);
+          Spicetify.showNotification(
+            `プレイリストのダウンロードを開始しました: ${response.download_id}`
+          );
+        } catch (error) {
+          console.error("Download error:", error);
+          Spicetify.showNotification(
+            error instanceof Error
+              ? error.message
+              : "ダウンロードの開始に失敗しました",
+            true
+          );
+        }
+      }
+    },
+    (uris) => {
+      // Only show for playlist URIs
+      return uris.some((uri) => uri.startsWith("spotify:playlist:"));
+    },
+    "download"
+  );
+  playlistDownloadItem.register();
+
   // Add menu item to show download status in popup modal
   const statusMenuItem = new Spicetify.Menu.Item(
     "Download Status",
@@ -102,6 +138,17 @@ async function main() {
     "download"
   );
   statusMenuItem.register();
+
+  // Add menu item to open extension settings
+  const extensionSettingsMenuItem = new Spicetify.Menu.Item(
+    "spotDL Settings",
+    false,
+    () => {
+      showExtensionSettingsModal();
+    },
+    "edit"
+  );
+  extensionSettingsMenuItem.register();
 
   /**
    * Show download status in a popup modal
@@ -120,6 +167,26 @@ async function main() {
       title: "ダウンロード状況",
       content: container,
       isLarge: true,
+    });
+  }
+
+  /**
+   * Show extension settings in a popup modal
+   */
+  function showExtensionSettingsModal() {
+    // Create a container for the React component
+    const container = document.createElement("div");
+    container.style.width = "100%";
+    container.style.height = "100%";
+
+    // Render the React component
+    ReactDOM.render(React.createElement(SettingsPage), container);
+
+    // Show in popup modal
+    Spicetify.PopupModal.display({
+      title: "spotDL 拡張機能設定",
+      content: container,
+      isLarge: false,
     });
   }
 
