@@ -252,12 +252,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      - name: Install Spicetify CLI
+        run: |
+          yes n | curl -fsSL https://raw.githubusercontent.com/spicetify/spicetify-cli/master/install.sh | sh || true
+          echo "$HOME/.spicetify" >> $GITHUB_PATH
+      
       - name: Build extension
-        run: npm run build
+        run: npx spicetify-creator --out=dist --minify
       
       - name: Create ZIP archive
         run: |
           # Create ZIP file from dist directory
+          if [ ! -d "dist" ]; then
+            echo "Error: dist directory not found"
+            ls -la
+            exit 1
+          fi
           cd dist
           zip -r ../spicedl2-extension-${{ steps.version.outputs.version }}.zip .
           cd ..
