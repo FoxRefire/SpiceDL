@@ -1,5 +1,5 @@
 /**
- * API client for spotDL download service
+ * API client for SpiceDL download service
  */
 import { getApiBaseUrl } from "./config";
 

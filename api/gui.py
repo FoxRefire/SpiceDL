@@ -74,7 +74,7 @@ class SettingsGUI(QMainWindow):
         self.input_focus = "#333333"
         self.error_color = "#e74c3c"
         
-        self.setWindowTitle("spotDL API Settings")
+        self.setWindowTitle("SpiceDL API Settings")
         self.setMinimumSize(900, 700)
         self.resize(900, 700)
         
@@ -113,7 +113,7 @@ class SettingsGUI(QMainWindow):
         title_layout.setContentsMargins(0, 0, 0, 0)
         title_layout.setSpacing(8)
         
-        title_label = QLabel("spotDL API Settings")
+        title_label = QLabel("SpiceDL API Settings")
         title_label.setStyleSheet(f"""
             color: {self.text_color};
             font-size: 28px;

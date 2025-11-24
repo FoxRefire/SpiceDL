@@ -13,7 +13,7 @@ class ConfigManager:
     def __init__(self, config_file: str = "config.json"):
         self.config_file = Path(config_file)
         self.default_config = {
-            "download_folder": str(Path.home() / "Music" / "spotDL"),
+            "download_folder": str(Path.home() / "Music" / "SpiceDL"),
             "port": 5985,
             "host": "127.0.0.1"
         }

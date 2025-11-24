@@ -1,4 +1,4 @@
-# spotDL API Server
+# SpiceDL API Server
 
 マルチプラットフォーム対応のSpotifyダウンロードAPIサーバー
 

@@ -122,7 +122,7 @@ class TrayApp(QObject):
         try:
             icon = self.create_icon_image()
             self.tray_icon = QSystemTrayIcon(icon, app)
-            self.tray_icon.setToolTip("spotDL API Server")
+            self.tray_icon.setToolTip("SpiceDL API Server")
             
             # Set menu
             menu = self.create_menu()

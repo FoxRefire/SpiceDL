@@ -1,5 +1,5 @@
 """
-Main REST API server for spotDL download service
+Main REST API server for SpiceDL download service
 """
 from flask import Flask, request, jsonify
 from flask_cors import CORS

@@ -1,5 +1,5 @@
 /**
- * Main Spicetify extension for spotDL download functionality
+ * Main Spicetify extension for SpiceDL download functionality
  */
 import * as API from "./api";
 import DownloadStatusPage from "./components/DownloadStatusPage";
@@ -17,14 +17,14 @@ async function main() {
   const apiAvailable = await API.checkHealth();
   if (!apiAvailable) {
     Spicetify.showNotification(
-      "spotDL APIサーバーに接続できません。サーバーが起動しているか確認してください。",
+      "SpiceDL APIサーバーに接続できません。サーバーが起動しているか確認してください。",
       true
     );
   }
 
   // Register context menu items for tracks
   const trackDownloadItem = new Spicetify.ContextMenu.Item(
-    "Download with spotDL",
+    "Download with SpiceDL",
     async (uris) => {
       for (const uri of uris) {
         try {
@@ -60,7 +60,7 @@ async function main() {
 
   // Register context menu items for albums
   const albumDownloadItem = new Spicetify.ContextMenu.Item(
-    "Download Album with spotDL",
+    "Download Album with SpiceDL",
     async (uris) => {
       for (const uri of uris) {
         try {
@@ -95,7 +95,7 @@ async function main() {
 
   // Register context menu items for playlists
   const playlistDownloadItem = new Spicetify.ContextMenu.Item(
-    "Download Playlist with spotDL",
+    "Download Playlist with SpiceDL",
     async (uris) => {
       for (const uri of uris) {
         try {
@@ -141,7 +141,7 @@ async function main() {
 
   // Add menu item to open extension settings
   const extensionSettingsMenuItem = new Spicetify.Menu.Item(
-    "spotDL Settings",
+    "SpiceDL Settings",
     false,
     () => {
       showExtensionSettingsModal();
@@ -215,7 +215,7 @@ async function main() {
 
     // Show in popup modal
     Spicetify.PopupModal.display({
-      title: "spotDL 拡張機能設定",
+      title: "SpiceDL 拡張機能設定",
       content: container,
       isLarge: false,
     });
@@ -225,7 +225,7 @@ async function main() {
   // For Spicetify Creator, we can create a custom app using React components
   // The custom app will be accessible via the sidebar
 
-  console.log("spotDL extension loaded successfully");
+  console.log("SpiceDL extension loaded successfully");
 }
 
 /**

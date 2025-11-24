@@ -12,10 +12,10 @@ interface SettingsPageProps {
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = () => {
-  const [apiPort, setApiPort] = useState<string>("5985");
-  const [apiHost, setApiHost] = useState<string>("127.0.0.1");
+  const [apiPort, setApiPort] = useState("5985");
+  const [apiHost, setApiHost] = useState("127.0.0.1");
   const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null as string | null);
 
   useEffect(() => {
     // Load current config
@@ -84,7 +84,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
         overflowY: "auto",
       }}
     >
-      <h1 style={{ marginTop: 0 }}>spotDL 拡張機能設定</h1>
+      <h1 style={{ marginTop: 0 }}>SpiceDL 拡張機能設定</h1>
 
       <div
         style={{

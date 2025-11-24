@@ -5,9 +5,9 @@ Spotifyから音楽をダウンロードするためのSpicetify拡張機能とA
 ## 機能
 
 ### Spicetify拡張機能
-- 曲とアルバムのコンテキストメニューに「Download with spotDL」ボタンを追加
+- 曲とアルバムのコンテキストメニューに「Download with SpiceDL」ボタンを追加
 - ダウンロード状況を確認するページ（プロフィールメニューからアクセス可能）
-- spotDL APIサーバーと連携してダウンロードを管理
+- SpiceDL APIサーバーと連携してダウンロードを管理
 
 ### APIサーバー
 - REST APIでSpotifyのURLを受け取り、spotDLを使ってダウンロード

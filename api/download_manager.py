@@ -1,5 +1,5 @@
 """
-Download manager for spotDL integration
+Download manager for API integration
 """
 import subprocess
 import threading
@@ -14,7 +14,7 @@ from pathlib import Path
 
 
 class DownloadManager:
-    """Manages spotDL downloads and tracks their progress"""
+    """Manages SpiceDL downloads and tracks their progress"""
     
     def __init__(self, download_folder: str = "./downloads"):
         self.download_folder = Path(download_folder)
