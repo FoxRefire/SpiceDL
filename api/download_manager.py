@@ -136,9 +136,9 @@ class DownloadManager:
             # Check if spotDL command is available
             if self.spotdl_command is None:
                 raise FileNotFoundError(
-                    "spotDLが見つかりません。以下のコマンドでインストールしてください:\n"
+                    "spotDL not found. Please install it using:\n"
                     "  pip install spotdl\n"
-                    "または\n"
+                    "or\n"
                     "  pip install git+https://github.com/spotDL/spotify-downloader.git"
                 )
             
@@ -304,7 +304,7 @@ class DownloadManager:
                 if self.downloads[download_id].get("status") != "cancelled":
                     self.downloads[download_id]["status"] = "failed"
                     error_msg = str(e)
-                    self.downloads[download_id]["message"] = "spotDLが見つかりません"
+                    self.downloads[download_id]["message"] = "spotDL not found"
                     self.downloads[download_id]["error"] = error_msg
                     self.downloads[download_id]["completed_at"] = datetime.now().isoformat()
         except Exception as e:
@@ -313,7 +313,7 @@ class DownloadManager:
                 if self.downloads[download_id].get("status") != "cancelled":
                     self.downloads[download_id]["status"] = "failed"
                     error_msg = str(e)
-                    self.downloads[download_id]["message"] = f"エラー: {error_msg}"
+                    self.downloads[download_id]["message"] = f"Error: {error_msg}"
                     self.downloads[download_id]["error"] = error_msg
                     self.downloads[download_id]["completed_at"] = datetime.now().isoformat()
     

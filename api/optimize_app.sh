@@ -4,7 +4,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APP_BUNDLE="${1:-${SCRIPT_DIR}/build/py2app/dist/spiceDL2 API.app}"
+APP_BUNDLE="${1:-${SCRIPT_DIR}/build/py2app/dist/SpiceDL API.app}"
 
 if [ ! -d "$APP_BUNDLE" ]; then
     echo "Error: App bundle not found: $APP_BUNDLE"

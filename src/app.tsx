@@ -17,7 +17,7 @@ async function main() {
   const apiAvailable = await API.checkHealth();
   if (!apiAvailable) {
     Spicetify.showNotification(
-      "SpiceDL APIサーバーに接続できません。サーバーが起動しているか確認してください。",
+      "Cannot connect to SpiceDL API server. Please check if the server is running.",
       true
     );
   }
@@ -31,20 +31,20 @@ async function main() {
           // Convert Spotify URI to URL
           const url = convertUriToUrl(uri);
           if (!url) {
-            Spicetify.showNotification("無効なURIです", true);
+            Spicetify.showNotification("Invalid URI", true);
             continue;
           }
 
           const response = await API.startDownload(url);
           Spicetify.showNotification(
-            `ダウンロードを開始しました: ${response.download_id}`
+            `Download started: ${response.download_id}`
           );
         } catch (error) {
           console.error("Download error:", error);
           Spicetify.showNotification(
             error instanceof Error
               ? error.message
-              : "ダウンロードの開始に失敗しました",
+              : "Failed to start download",
             true
           );
         }
@@ -66,20 +66,20 @@ async function main() {
         try {
           const url = convertUriToUrl(uri);
           if (!url) {
-            Spicetify.showNotification("無効なURIです", true);
+            Spicetify.showNotification("Invalid URI", true);
             continue;
           }
 
           const response = await API.startDownload(url);
           Spicetify.showNotification(
-            `アルバムのダウンロードを開始しました: ${response.download_id}`
+            `Album download started: ${response.download_id}`
           );
         } catch (error) {
           console.error("Download error:", error);
           Spicetify.showNotification(
             error instanceof Error
               ? error.message
-              : "ダウンロードの開始に失敗しました",
+              : "Failed to start download",
             true
           );
         }
@@ -101,20 +101,20 @@ async function main() {
         try {
           const url = convertUriToUrl(uri);
           if (!url) {
-            Spicetify.showNotification("無効なURIです", true);
+            Spicetify.showNotification("Invalid URI", true);
             continue;
           }
 
           const response = await API.startDownload(url);
           Spicetify.showNotification(
-            `プレイリストのダウンロードを開始しました: ${response.download_id}`
+            `Playlist download started: ${response.download_id}`
           );
         } catch (error) {
           console.error("Download error:", error);
           Spicetify.showNotification(
             error instanceof Error
               ? error.message
-              : "ダウンロードの開始に失敗しました",
+              : "Failed to start download",
             true
           );
         }
@@ -164,7 +164,7 @@ async function main() {
 
     // Show in popup modal
     Spicetify.PopupModal.display({
-      title: "ダウンロード状況",
+      title: "Download Status",
       content: container,
       isLarge: true,
     });
@@ -215,7 +215,7 @@ async function main() {
 
     // Show in popup modal
     Spicetify.PopupModal.display({
-      title: "SpiceDL 拡張機能設定",
+      title: "SpiceDL Extension Settings",
       content: container,
       isLarge: false,
     });

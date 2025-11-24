@@ -21,13 +21,13 @@ download_manager = DownloadManager(
 
 # Check if spotDL is available on startup
 if download_manager.spotdl_command is None:
-    print("警告: spotDLが見つかりません。")
-    print("以下のコマンドでインストールしてください:")
+    print("Warning: spotDL not found.")
+    print("Please install it using:")
     print("  pip install spotdl")
-    print("または")
+    print("or")
     print("  pip install git+https://github.com/spotDL/spotify-downloader.git")
 else:
-    print(f"spotDLコマンドが見つかりました: {' '.join(download_manager.spotdl_command)}")
+    print(f"spotDL command found: {' '.join(download_manager.spotdl_command)}")
 
 
 @app.route("/download", methods=["POST"])

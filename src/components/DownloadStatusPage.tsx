@@ -61,7 +61,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
 
     // Return cached if available (and not loading/error state) - use ref for latest value
     const cached = metadataCacheRef.current[url];
-    if (cached && cached.name !== "読み込み中..." && cached.name !== "メタデータ取得失敗") {
+    if (cached && cached.name !== "Loading..." && cached.name !== "Failed to fetch metadata") {
       return cached;
     }
 
@@ -332,8 +332,8 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
       }
       console.error("Error fetching metadata:", err);
       // Set error state only if we don't have valid metadata already
-      if (!metadataCacheRef.current[url] || metadataCacheRef.current[url].name === "読み込み中..." || metadataCacheRef.current[url].name === "メタデータ取得失敗") {
-        const updatedCache = { ...metadataCacheRef.current, [url]: { name: "メタデータ取得失敗", uri: uri, type: type } };
+      if (!metadataCacheRef.current[url] || metadataCacheRef.current[url].name === "Loading..." || metadataCacheRef.current[url].name === "Failed to fetch metadata") {
+        const updatedCache = { ...metadataCacheRef.current, [url]: { name: "Failed to fetch metadata", uri: uri, type: type } };
         metadataCacheRef.current = updatedCache;
         setMetadataCache(updatedCache);
       }
@@ -370,7 +370,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
 
       if (!isHealthy) {
         if (!isMountedRef.current) return;
-        setError("APIサーバーに接続できません。サーバーが起動しているか確認してください。");
+        setError("Cannot connect to API server. Please check if the server is running.");
         setLoading(false);
         return;
       }
@@ -405,11 +405,11 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
         // 1. Not cached at all, OR
         // 2. Cached but in error state (not loading state - we don't want to overwrite loading state)
         // 3. Not currently fetching
-        const hasValidCache = cached && cached.name !== "読み込み中..." && cached.name !== "メタデータ取得失敗";
+        const hasValidCache = cached && cached.name !== "Loading..." && cached.name !== "Failed to fetch metadata";
         
         if (!hasValidCache && !isFetching) {
           // Only set loading state if we don't have any cache at all
-          // Never overwrite valid metadata with "読み込み中..."
+          // Never overwrite valid metadata with "Loading..."
           if (!cached) {
             // Check if component is still mounted before updating state
             if (!isMountedRef.current) {
@@ -417,8 +417,8 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
             }
             // Check if we already have valid metadata in ref (shouldn't happen, but safety check)
             const refCached = metadataCacheRef.current[download.url];
-            if (!refCached || refCached.name === "読み込み中..." || refCached.name === "メタデータ取得失敗") {
-              const updatedCache = { ...metadataCacheRef.current, [download.url]: { name: "読み込み中...", uri: urlToUri(download.url) || undefined } };
+            if (!refCached || refCached.name === "Loading..." || refCached.name === "Failed to fetch metadata") {
+              const updatedCache = { ...metadataCacheRef.current, [download.url]: { name: "Loading...", uri: urlToUri(download.url) || undefined } };
               metadataCacheRef.current = updatedCache;
               setMetadataCache(updatedCache);
             }
@@ -452,7 +452,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
       if (!isMountedRef.current) {
         return;
       }
-      setError(err instanceof Error ? err.message : "ステータスの取得に失敗しました");
+      setError(err instanceof Error ? err.message : "Failed to fetch status");
       console.error("Error fetching status:", err);
     } finally {
       // Only update loading state if component is still mounted
@@ -515,10 +515,10 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
     try {
       await API.cancelDownload(downloadId);
       await fetchStatus();
-      Spicetify.showNotification("ダウンロードをキャンセルしました");
+      Spicetify.showNotification("Download cancelled");
     } catch (err) {
       Spicetify.showNotification(
-        err instanceof Error ? err.message : "キャンセルに失敗しました",
+        err instanceof Error ? err.message : "Failed to cancel",
         true
       );
     }
@@ -542,15 +542,15 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
   const getStatusText = (status: string) => {
     switch (status) {
       case "starting":
-        return "開始中";
+        return "Starting";
       case "downloading":
-        return "ダウンロード中";
+        return "Downloading";
       case "completed":
-        return "完了";
+        return "Completed";
       case "failed":
-        return "失敗";
+        return "Failed";
       case "cancelled":
-        return "キャンセル済み";
+        return "Cancelled";
       default:
         return status;
     }
@@ -648,7 +648,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
           color: "var(--spice-text-subdued)",
         }}
       >
-        読み込み中...
+        Loading...
       </div>
     );
   }
@@ -661,7 +661,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
           color: "var(--spice-text-negative)",
         }}
       >
-        <h2>エラー</h2>
+        <h2>Error</h2>
         <p>{error}</p>
         <button
           onClick={fetchStatus}
@@ -675,7 +675,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
             cursor: "pointer",
           }}
         >
-          再試行
+          Retry
         </button>
       </div>
     );
@@ -703,7 +703,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
       >
         <div>
           <h1 style={{ margin: 0, fontSize: "24px", fontWeight: "bold" }}>
-            ダウンロード状況
+            Download Status
           </h1>
           <p
             style={{
@@ -712,7 +712,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
               color: "var(--spice-text-subdued)",
             }}
           >
-            {stats.total}件のダウンロード
+            {stats.total} downloads
           </p>
         </div>
         <div
@@ -726,10 +726,10 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
             onClick={async () => {
               try {
                 await API.openDownloadFolder();
-                Spicetify.showNotification("ダウンロード先フォルダを開きました");
+                Spicetify.showNotification("Download folder opened");
               } catch (error) {
                 Spicetify.showNotification(
-                  error instanceof Error ? error.message : "フォルダを開けませんでした",
+                  error instanceof Error ? error.message : "Failed to open folder",
                   true
                 );
               }
@@ -752,7 +752,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
               e.currentTarget.style.opacity = "1";
             }}
           >
-            📁 ダウンロード先を開く
+            📁 Open Download Folder
           </button>
           <button
             onClick={fetchStatus}
@@ -774,7 +774,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
               e.currentTarget.style.opacity = "1";
             }}
           >
-            ⟳ 更新
+            ⟳ Refresh
           </button>
         </div>
       </div>
@@ -798,7 +798,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
             }}
           >
             <div style={{ fontSize: "24px", fontWeight: "bold" }}>{stats.total}</div>
-            <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>合計</div>
+            <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>Total</div>
           </div>
           <div
             style={{
@@ -817,7 +817,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
             >
               {stats.active}
             </div>
-            <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>実行中</div>
+            <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>Active</div>
           </div>
           <div
             style={{
@@ -836,7 +836,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
             >
               {stats.completed}
             </div>
-            <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>完了</div>
+            <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>Completed</div>
           </div>
           <div
             style={{
@@ -855,7 +855,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
             >
               {stats.failed}
             </div>
-            <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>失敗</div>
+            <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>Failed</div>
           </div>
           <div
             style={{
@@ -874,7 +874,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
             >
               {stats.cancelled}
             </div>
-            <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>キャンセル済み</div>
+            <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>Cancelled</div>
           </div>
         </div>
       )}
@@ -890,11 +890,11 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
           }}
         >
           {[
-            { key: "all", label: "すべて" },
-            { key: "active", label: "実行中" },
-            { key: "completed", label: "完了" },
-            { key: "failed", label: "失敗" },
-            { key: "cancelled", label: "キャンセル済み" },
+            { key: "all", label: "All" },
+            { key: "active", label: "Active" },
+            { key: "completed", label: "Completed" },
+            { key: "failed", label: "Failed" },
+            { key: "cancelled", label: "Cancelled" },
           ].map((f) => (
             <button
               key={f.key}
@@ -940,12 +940,12 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
           <div style={{ fontSize: "48px", marginBottom: "16px" }}>📥</div>
           <div style={{ fontSize: "16px", marginBottom: "8px" }}>
             {downloads.length === 0
-              ? "ダウンロードがありません"
-              : "このフィルターに一致するダウンロードがありません"}
+              ? "No downloads"
+              : "No downloads match this filter"}
           </div>
           {downloads.length === 0 && (
             <div style={{ fontSize: "14px" }}>
-              曲やアルバムを右クリックしてダウンロードを開始してください
+              Right-click on tracks or albums to start downloading
             </div>
           )}
         </div>
@@ -973,14 +973,14 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
             }
             
             // Use metadata if available and valid, otherwise show loading
-            // Don't show "読み込み中..." if we have valid metadata cached
+            // Don't show "Loading..." if we have valid metadata cached
             // Always check ref first to get latest value
-            const validMetadata = metadata && metadata.name !== "読み込み中..." && metadata.name !== "メタデータ取得失敗";
+            const validMetadata = metadata && metadata.name !== "Loading..." && metadata.name !== "Failed to fetch metadata";
             const displayName = validMetadata
               ? metadata.name
-              : metadata?.name === "読み込み中..."
-              ? "読み込み中..."
-              : "読み込み中...";
+              : metadata?.name === "Loading..."
+              ? "Loading..."
+              : "Loading...";
             
             return (
               <div
@@ -1185,7 +1185,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
                           marginBottom: "4px",
                         }}
                       >
-                        エラー詳細
+                        Error Details
                       </summary>
                       <div
                         style={{
@@ -1227,7 +1227,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
                           e.currentTarget.style.opacity = "1";
                         }}
                       >
-                        ⊘ キャンセル
+                        ⊘ Cancel
                       </button>
                     )}
                   </div>
@@ -1267,11 +1267,11 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
                     }}
                   >
                     <span>
-                      <strong>開始:</strong> {new Date(download.started_at).toLocaleString("ja-JP")}
+                      <strong>Started:</strong> {new Date(download.started_at).toLocaleString()}
                     </span>
                     {download.completed_at && (
                       <span>
-                        <strong>完了:</strong> {new Date(download.completed_at).toLocaleString("ja-JP")}
+                        <strong>Completed:</strong> {new Date(download.completed_at).toLocaleString()}
                       </span>
                     )}
                   </div>

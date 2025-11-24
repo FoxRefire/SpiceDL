@@ -1,42 +1,42 @@
-# ビルドガイド
+# Build Guide
 
-このディレクトリには、spiceDL2 APIを様々なプラットフォーム向けにビルドするためのスクリプトが含まれています。
+This directory contains scripts to build SpiceDL API for various platforms.
 
-## サポートされているビルド形式
+## Supported Build Formats
 
-- **DEB**: Debian/Ubuntu向けパッケージ（FPM使用）
-- **RPM**: Red Hat/CentOS/Fedora向けパッケージ（FPM使用）
-- **EXE**: Windows向け実行ファイル（Nuitka使用）
-- **APP**: macOS向けアプリケーションバンドル（Py2App使用）
+- **DEB**: Debian/Ubuntu package (using FPM)
+- **RPM**: Red Hat/CentOS/Fedora package (using FPM)
+- **EXE**: Windows executable (using Nuitka)
+- **APP**: macOS application bundle (using Py2App)
 
-## 前提条件
+## Prerequisites
 
-### 全プラットフォーム共通
-- Python 3.11以上
+### All Platforms
+- Python 3.11 or higher
 - pip
 
-### DEB/RPMビルド（Linux）
+### DEB/RPM Build (Linux)
 ```bash
-# FPMのインストール
+# Install FPM
 sudo apt-get install ruby ruby-dev build-essential
 sudo gem install fpm
 ```
 
-### EXEビルド（Windows）
+### EXE Build (Windows)
 ```bash
-# Nuitkaのインストール
+# Install Nuitka
 pip install nuitka
 ```
 
-### APPビルド（macOS）
+### APP Build (macOS)
 ```bash
-# Py2Appのインストール
+# Install Py2App
 pip install py2app
 ```
 
-## ビルド方法
+## Build Methods
 
-### DEB/RPMパッケージのビルド
+### DEB/RPM Package Build
 
 ```bash
 cd api
@@ -44,24 +44,24 @@ chmod +x build_fpm.sh
 ./build_fpm.sh
 ```
 
-環境変数でバージョンとアーキテクチャを指定できます：
+You can specify version and architecture using environment variables:
 
 ```bash
 VERSION=1.0.0 ARCH=amd64 ./build_fpm.sh
 ```
 
-ビルドされたパッケージは `build/fpm/` ディレクトリに生成されます。
+Built packages are generated in the `build/fpm/` directory.
 
-### Windows EXEのビルド
+### Windows EXE Build
 
 ```bash
 cd api
 python nuitka_build.py
 ```
 
-ビルドされたEXEは `build/nuitka/dist/` ディレクトリに生成されます。
+Built EXE is generated in the `build/nuitka/dist/` directory.
 
-### macOS Appバンドルのビルド
+### macOS App Bundle Build
 
 ```bash
 cd api
@@ -69,55 +69,54 @@ chmod +x build_py2app.sh
 ./build_py2app.sh
 ```
 
-ビルドされたAppバンドルは `build/py2app/dist/` ディレクトリに生成されます。
+Built App bundle is generated in the `build/py2app/dist/` directory.
 
-## GitHub Actionsでの自動ビルド
+## Automated Build with GitHub Actions
 
-`.github/workflows/build.yml` が設定されており、以下のトリガーで自動ビルドが実行されます：
+`.github/workflows/build.yml` is configured and automatically builds on the following triggers:
 
-1. **タグプッシュ**: `v*` 形式のタグをプッシュすると、全プラットフォーム向けにビルドされます
-2. **手動実行**: GitHub ActionsのUIから手動でワークフローを実行できます
+1. **Tag Push**: Pushing a tag in `v*` format builds for all platforms
+2. **Manual Run**: You can manually run the workflow from the GitHub Actions UI
 
-### リリースの作成
+### Creating a Release
 
-タグをプッシュすると、自動的にGitHubリリースが作成され、ビルドされたパッケージがアップロードされます：
+Pushing a tag automatically creates a GitHub release and uploads the built packages:
 
 ```bash
 git tag v1.0.0
 git push origin v1.0.0
 ```
 
-## トラブルシューティング
+## Troubleshooting
 
-### FPMビルドエラー
+### FPM Build Errors
 
-- RubyとFPMが正しくインストールされているか確認してください
-- 依存関係が不足している場合は、エラーメッセージに従ってインストールしてください
+- Verify that Ruby and FPM are properly installed
+- If dependencies are missing, install them according to the error message
 
-### Nuitkaビルドエラー
+### Nuitka Build Errors
 
-- Nuitkaが最新バージョンであることを確認してください: `pip install --upgrade nuitka`
-- 必要なモジュールがすべて含まれているか確認してください
-- Windowsでは、Visual C++ Build Toolsが必要な場合があります
+- Make sure Nuitka is the latest version: `pip install --upgrade nuitka`
+- Verify that all required modules are included
+- On Windows, Visual C++ Build Tools may be required
 
-### Py2Appビルドエラー
+### Py2App Build Errors
 
-- macOSでのみ実行可能です
-- PySide6の依存関係が正しくインストールされているか確認してください
-- アイコンファイル（.icns）を追加する場合は、`setup.py`の`iconfile`オプションを更新してください
+- Only runs on macOS
+- Verify that PySide6 dependencies are properly installed
+- If adding an icon file (.icns), update the `iconfile` option in `setup.py`
 
-## カスタマイズ
+## Customization
 
-### バージョン情報の変更
+### Changing Version Information
 
-各ビルドスクリプトでバージョン情報を変更できます：
+You can change version information in each build script:
 
-- **FPM**: `build_fpm.sh`の`VERSION`変数
-- **Nuitka**: `nuitka_build.py`内で直接指定
-- **Py2App**: `setup.py`の`version`と`CFBundleVersion`
+- **FPM**: `VERSION` variable in `build_fpm.sh`
+- **Nuitka**: Specify directly in `nuitka_build.py`
+- **Py2App**: `version` and `CFBundleVersion` in `setup.py`
 
-### アイコンの追加
+### Adding Icons
 
-- **Windows**: `icon.ico`ファイルを`api/`ディレクトリに配置
-- **macOS**: `icon.icns`ファイルを`api/`ディレクトリに配置し、`setup.py`の`iconfile`を更新
-
+- **Windows**: Place `icon.ico` file in the `api/` directory
+- **macOS**: Place `icon.icns` file in the `api/` directory and update `iconfile` in `setup.py`

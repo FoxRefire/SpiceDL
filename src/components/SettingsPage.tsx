@@ -28,12 +28,12 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
     try {
       const port = parseInt(apiPort, 10);
       if (isNaN(port) || port < 1 || port > 65535) {
-        setError("ポート番号は1から65535の間で指定してください");
+        setError("Port number must be between 1 and 65535");
         return;
       }
 
       if (!apiHost || apiHost.trim() === "") {
-        setError("ホスト名を入力してください");
+        setError("Please enter a host name");
         return;
       }
 
@@ -45,9 +45,9 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
       setError(null);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-      Spicetify.showNotification("設定を保存しました");
+      Spicetify.showNotification("Settings saved");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "設定の保存に失敗しました");
+      setError(err instanceof Error ? err.message : "Failed to save settings");
     }
   };
 
@@ -58,19 +58,19 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
     setApiHost(defaultConfig.apiHost);
     setError(null);
     setSaved(false);
-    Spicetify.showNotification("設定をリセットしました");
+    Spicetify.showNotification("Settings reset");
   };
 
   const handleOpenApiServerSettings = async () => {
     try {
       await API.openSettings();
-      Spicetify.showNotification("APIサーバーの設定画面を開きました");
+      Spicetify.showNotification("API server settings window opened");
     } catch (error) {
       console.error("Error opening API server settings:", error);
       Spicetify.showNotification(
         error instanceof Error
           ? error.message
-          : "APIサーバーの設定画面を開けませんでした",
+          : "Failed to open API server settings window",
         true
       );
     }
@@ -84,7 +84,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
         overflowY: "auto",
       }}
     >
-      <h1 style={{ marginTop: 0 }}>SpiceDL 拡張機能設定</h1>
+      <h1 style={{ marginTop: 0 }}>SpiceDL Extension Settings</h1>
 
       <div
         style={{
@@ -103,7 +103,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
               fontWeight: "bold",
             }}
           >
-            APIサーバーのホスト
+            API Server Host
           </label>
           <input
             type="text"
@@ -131,7 +131,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
               fontWeight: "bold",
             }}
           >
-            APIサーバーのポート番号
+            API Server Port
           </label>
           <input
             type="number"
@@ -176,7 +176,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
               fontSize: "14px",
             }}
           >
-            設定を保存しました
+            Settings saved
           </div>
         )}
 
@@ -199,7 +199,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
               fontWeight: "bold",
             }}
           >
-            保存
+            Save
           </button>
           <button
             onClick={handleReset}
@@ -213,7 +213,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
               fontSize: "14px",
             }}
           >
-            リセット
+            Reset
           </button>
         </div>
 
@@ -234,7 +234,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
               color: "var(--spice-text)",
             }}
           >
-            APIサーバー設定
+            API Server Settings
           </h3>
           <p
             style={{
@@ -243,7 +243,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
               color: "var(--spice-text-subdued)",
             }}
           >
-            APIサーバーのダウンロード先フォルダやポートなどの設定を変更するには、以下のボタンをクリックしてください。
+            To change API server settings such as download folder and port, click the button below.
           </p>
           <button
             onClick={handleOpenApiServerSettings}
@@ -259,7 +259,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
               width: "100%",
             }}
           >
-            APIサーバーの設定を開く
+            Open API Server Settings
           </button>
         </div>
 
@@ -273,11 +273,11 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
             color: "var(--spice-text-subdued)",
           }}
         >
-          <strong>現在の設定:</strong>
+          <strong>Current Settings:</strong>
           <br />
-          ホスト: {apiHost}
+          Host: {apiHost}
           <br />
-          ポート: {apiPort}
+          Port: {apiPort}
           <br />
           <br />
           API URL: http://{apiHost}:{apiPort}

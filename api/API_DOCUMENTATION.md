@@ -1,84 +1,84 @@
-# SpiceDL API ドキュメント
+# SpiceDL API Documentation
 
-このドキュメントでは、SpiceDL APIサーバーの使用方法について詳しく説明します。
+This document provides detailed information on how to use the SpiceDL API server.
 
-## 目次
+## Table of Contents
 
-- [基本情報](#基本情報)
-- [エンドポイント一覧](#エンドポイント一覧)
-- [エンドポイント詳細](#エンドポイント詳細)
-- [レスポンス形式](#レスポンス形式)
-- [エラーハンドリング](#エラーハンドリング)
-- [使用例](#使用例)
-- [よくある質問](#よくある質問)
+- [Basic Information](#basic-information)
+- [Endpoint List](#endpoint-list)
+- [Endpoint Details](#endpoint-details)
+- [Response Format](#response-format)
+- [Error Handling](#error-handling)
+- [Usage Examples](#usage-examples)
+- [FAQ](#faq)
 
-## 基本情報
+## Basic Information
 
-### ベースURL
+### Base URL
 
-デフォルトでは、APIサーバーは以下のURLで起動します：
+By default, the API server starts at the following URL:
 
 ```
-http://127.0.0.1:5000
+http://127.0.0.1:5985
 ```
 
-設定で変更可能です（GUI設定画面または`config.json`で変更）。
+This can be changed in settings (via GUI settings window or `config.json`).
 
-### リクエスト形式
+### Request Format
 
-- **Content-Type**: `application/json`（POSTリクエストの場合
-- **メソッド**: GET, POST
-- **エンコーディング**: UTF-8
+- **Content-Type**: `application/json` (for POST requests)
+- **Methods**: GET, POST
+- **Encoding**: UTF-8
 
-### レスポンス形式
+### Response Format
 
-すべてのレスポンスはJSON形式で返されます。
+All responses are returned in JSON format.
 
-## エンドポイント一覧
+## Endpoint List
 
-| メソッド | エンドポイント | 説明 |
-|---------|--------------|------|
-| POST | `/download` | SpotifyのURLを送信してダウンロードを開始 |
-| GET | `/status` | ダウンロードの進行状況を取得 |
-| POST | `/cancel` | ダウンロードをキャンセル |
-| GET | `/health` | サーバーのヘルスチェック |
-| POST | `/open-settings` | GUI設定画面を開く |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/download` | Send Spotify URL to start download |
+| GET | `/status` | Get download progress |
+| POST | `/cancel` | Cancel download |
+| GET | `/health` | Server health check |
+| POST | `/open-settings` | Open GUI settings window |
 
-## エンドポイント詳細
+## Endpoint Details
 
 ### POST /download
 
-SpotifyのURLを受け取り、ダウンロードを開始します。
+Accepts a Spotify URL and starts a download.
 
-#### リクエスト
+#### Request
 
-**URL**: `http://127.0.0.1:5000/download`
+**URL**: `http://127.0.0.1:5985/download`
 
-**メソッド**: `POST`
+**Method**: `POST`
 
-**ヘッダー**:
+**Headers**:
 ```
 Content-Type: application/json
 ```
 
-**ボディ**:
+**Body**:
 ```json
 {
   "url": "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT"
 }
 ```
 
-**パラメータ**:
-- `url` (string, 必須): SpotifyのURL
-  - 対応形式:
-    - トラック: `https://open.spotify.com/track/{track_id}`
-    - アルバム: `https://open.spotify.com/album/{album_id}`
-    - プレイリスト: `https://open.spotify.com/playlist/{playlist_id}`
-    - アーティスト: `https://open.spotify.com/artist/{artist_id}`
+**Parameters**:
+- `url` (string, required): Spotify URL
+  - Supported formats:
+    - Track: `https://open.spotify.com/track/{track_id}`
+    - Album: `https://open.spotify.com/album/{album_id}`
+    - Playlist: `https://open.spotify.com/playlist/{playlist_id}`
+    - Artist: `https://open.spotify.com/artist/{artist_id}`
 
-#### レスポンス
+#### Response
 
-**成功時 (200 OK)**:
+**Success (200 OK)**:
 ```json
 {
   "success": true,
@@ -87,14 +87,14 @@ Content-Type: application/json
 }
 ```
 
-**エラー時 (400 Bad Request)**:
+**Error (400 Bad Request)**:
 ```json
 {
   "error": "Missing 'url' parameter"
 }
 ```
 
-または
+or
 
 ```json
 {
@@ -102,18 +102,18 @@ Content-Type: application/json
 }
 ```
 
-**エラー時 (500 Internal Server Error)**:
+**Error (500 Internal Server Error)**:
 ```json
 {
   "error": "Error message here"
 }
 ```
 
-#### 使用例
+#### Usage Examples
 
 **cURL**:
 ```bash
-curl -X POST http://127.0.0.1:5000/download \
+curl -X POST http://127.0.0.1:5985/download \
   -H "Content-Type: application/json" \
   -d '{"url": "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT"}'
 ```
@@ -122,7 +122,7 @@ curl -X POST http://127.0.0.1:5000/download \
 ```python
 import requests
 
-url = "http://127.0.0.1:5000/download"
+url = "http://127.0.0.1:5985/download"
 payload = {
     "url": "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT"
 }
@@ -132,7 +132,7 @@ print(response.json())
 
 **JavaScript (fetch)**:
 ```javascript
-fetch('http://127.0.0.1:5000/download', {
+fetch('http://127.0.0.1:5985/download', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -149,20 +149,20 @@ fetch('http://127.0.0.1:5000/download', {
 
 ### GET /status
 
-ダウンロードの進行状況を取得します。
+Gets download progress.
 
-#### リクエスト
+#### Request
 
-**URL**: `http://127.0.0.1:5000/status`
+**URL**: `http://127.0.0.1:5985/status`
 
-**メソッド**: `GET`
+**Method**: `GET`
 
-**クエリパラメータ**:
-- `id` (string, オプション): 特定のダウンロードIDを指定。省略するとすべてのダウンロードの状態を返します。
+**Query Parameters**:
+- `id` (string, optional): Specify a specific download ID. If omitted, returns status of all downloads.
 
-#### レスポンス
+#### Response
 
-**特定のダウンロードを取得 (200 OK)**:
+**Get Specific Download (200 OK)**:
 ```json
 {
   "id": "dl_20240101_120000_123456",
@@ -176,7 +176,7 @@ fetch('http://127.0.0.1:5000/download', {
 }
 ```
 
-**すべてのダウンロードを取得 (200 OK)**:
+**Get All Downloads (200 OK)**:
 ```json
 {
   "downloads": [
@@ -205,30 +205,30 @@ fetch('http://127.0.0.1:5000/download', {
 }
 ```
 
-**ダウンロードが見つからない場合 (200 OK)**:
+**Download Not Found (200 OK)**:
 ```json
 {
   "error": "Download not found"
 }
 ```
 
-#### ステータス値
+#### Status Values
 
-- `starting`: ダウンロードを開始中
-- `downloading`: ダウンロード中
-- `completed`: ダウンロード完了
-- `failed`: ダウンロード失敗
-- `cancelled`: ダウンロードがキャンセルされた
+- `starting`: Download is starting
+- `downloading`: Downloading
+- `completed`: Download completed
+- `failed`: Download failed
+- `cancelled`: Download was cancelled
 
-#### 使用例
+#### Usage Examples
 
 **cURL**:
 ```bash
-# すべてのダウンロードの状態を取得
-curl http://127.0.0.1:5000/status
+# Get status of all downloads
+curl http://127.0.0.1:5985/status
 
-# 特定のダウンロードの状態を取得
-curl "http://127.0.0.1:5000/status?id=dl_20240101_120000_123456"
+# Get status of a specific download
+curl "http://127.0.0.1:5985/status?id=dl_20240101_120000_123456"
 ```
 
 **Python (requests)**:
@@ -236,17 +236,17 @@ curl "http://127.0.0.1:5000/status?id=dl_20240101_120000_123456"
 import requests
 import time
 
-# ダウンロードを開始
+# Start download
 download_response = requests.post(
-    "http://127.0.0.1:5000/download",
+    "http://127.0.0.1:5985/download",
     json={"url": "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT"}
 )
 download_id = download_response.json()["download_id"]
 
-# 進行状況をポーリング
+# Poll progress
 while True:
     status_response = requests.get(
-        f"http://127.0.0.1:5000/status?id={download_id}"
+        f"http://127.0.0.1:5985/status?id={download_id}"
     )
     status = status_response.json()
     
@@ -255,13 +255,13 @@ while True:
     if status['status'] in ['completed', 'failed', 'cancelled']:
         break
     
-    time.sleep(2)  # 2秒待機
+    time.sleep(2)  # Wait 2 seconds
 ```
 
 **JavaScript (fetch)**:
 ```javascript
-// すべてのダウンロードの状態を取得
-fetch('http://127.0.0.1:5000/status')
+// Get status of all downloads
+fetch('http://127.0.0.1:5985/status')
   .then(response => response.json())
   .then(data => {
     console.log(`Total downloads: ${data.total}`);
@@ -270,9 +270,9 @@ fetch('http://127.0.0.1:5000/status')
     });
   });
 
-// 特定のダウンロードの状態を取得
+// Get status of a specific download
 const downloadId = 'dl_20240101_120000_123456';
-fetch(`http://127.0.0.1:5000/status?id=${downloadId}`)
+fetch(`http://127.0.0.1:5985/status?id=${downloadId}`)
   .then(response => response.json())
   .then(data => console.log(data));
 ```
@@ -281,32 +281,32 @@ fetch(`http://127.0.0.1:5000/status?id=${downloadId}`)
 
 ### POST /cancel
 
-実行中のダウンロードをキャンセルします。
+Cancels a running download.
 
-#### リクエスト
+#### Request
 
-**URL**: `http://127.0.0.1:5000/cancel`
+**URL**: `http://127.0.0.1:5985/cancel`
 
-**メソッド**: `POST`
+**Method**: `POST`
 
-**ヘッダー**:
+**Headers**:
 ```
 Content-Type: application/json
 ```
 
-**ボディ**:
+**Body**:
 ```json
 {
   "id": "dl_20240101_120000_123456"
 }
 ```
 
-**パラメータ**:
-- `id` (string, 必須): キャンセルするダウンロードのID
+**Parameters**:
+- `id` (string, required): ID of the download to cancel
 
-#### レスポンス
+#### Response
 
-**成功時 (200 OK)**:
+**Success (200 OK)**:
 ```json
 {
   "success": true,
@@ -314,25 +314,25 @@ Content-Type: application/json
 }
 ```
 
-**エラー時 (400 Bad Request)**:
+**Error (400 Bad Request)**:
 ```json
 {
   "error": "Missing 'id' parameter"
 }
 ```
 
-**エラー時 (404 Not Found)**:
+**Error (404 Not Found)**:
 ```json
 {
   "error": "Download not found or cannot be cancelled"
 }
 ```
 
-#### 使用例
+#### Usage Examples
 
 **cURL**:
 ```bash
-curl -X POST http://127.0.0.1:5000/cancel \
+curl -X POST http://127.0.0.1:5985/cancel \
   -H "Content-Type: application/json" \
   -d '{"id": "dl_20240101_120000_123456"}'
 ```
@@ -342,7 +342,7 @@ curl -X POST http://127.0.0.1:5000/cancel \
 import requests
 
 response = requests.post(
-    "http://127.0.0.1:5000/cancel",
+    "http://127.0.0.1:5985/cancel",
     json={"id": "dl_20240101_120000_123456"}
 )
 print(response.json())
@@ -350,7 +350,7 @@ print(response.json())
 
 **JavaScript (fetch)**:
 ```javascript
-fetch('http://127.0.0.1:5000/cancel', {
+fetch('http://127.0.0.1:5985/cancel', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -367,24 +367,24 @@ fetch('http://127.0.0.1:5000/cancel', {
 
 ### POST /open-settings
 
-GUI設定画面を開きます。このエンドポイントを呼び出すと、サーバー側で設定ウィンドウが表示されます。
+Opens the GUI settings window. Calling this endpoint displays the settings window on the server side.
 
-#### リクエスト
+#### Request
 
-**URL**: `http://127.0.0.1:5000/open-settings`
+**URL**: `http://127.0.0.1:5985/open-settings`
 
-**メソッド**: `POST`
+**Method**: `POST`
 
-**ヘッダー**:
+**Headers**:
 ```
 Content-Type: application/json
 ```
 
-**ボディ**: なし（空のJSONオブジェクトでも可）
+**Body**: None (empty JSON object is acceptable)
 
-#### レスポンス
+#### Response
 
-**成功時 (200 OK)**:
+**Success (200 OK)**:
 ```json
 {
   "success": true,
@@ -392,18 +392,18 @@ Content-Type: application/json
 }
 ```
 
-**エラー時 (500 Internal Server Error)**:
+**Error (500 Internal Server Error)**:
 ```json
 {
   "error": "Error message here"
 }
 ```
 
-#### 使用例
+#### Usage Examples
 
 **cURL**:
 ```bash
-curl -X POST http://127.0.0.1:5000/open-settings \
+curl -X POST http://127.0.0.1:5985/open-settings \
   -H "Content-Type: application/json"
 ```
 
@@ -411,13 +411,13 @@ curl -X POST http://127.0.0.1:5000/open-settings \
 ```python
 import requests
 
-response = requests.post("http://127.0.0.1:5000/open-settings")
+response = requests.post("http://127.0.0.1:5985/open-settings")
 print(response.json())
 ```
 
 **JavaScript (fetch)**:
 ```javascript
-fetch('http://127.0.0.1:5000/open-settings', {
+fetch('http://127.0.0.1:5985/open-settings', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -431,54 +431,54 @@ fetch('http://127.0.0.1:5000/open-settings', {
 
 ### GET /health
 
-サーバーのヘルスチェックを行います。サーバーが正常に動作しているか確認するために使用します。
+Performs a server health check. Used to verify that the server is running properly.
 
-#### リクエスト
+#### Request
 
-**URL**: `http://127.0.0.1:5000/health`
+**URL**: `http://127.0.0.1:5985/health`
 
-**メソッド**: `GET`
+**Method**: `GET`
 
-#### レスポンス
+#### Response
 
-**成功時 (200 OK)**:
+**Success (200 OK)**:
 ```json
 {
   "status": "ok"
 }
 ```
 
-#### 使用例
+#### Usage Examples
 
 **cURL**:
 ```bash
-curl http://127.0.0.1:5000/health
+curl http://127.0.0.1:5985/health
 ```
 
 **Python (requests)**:
 ```python
 import requests
 
-response = requests.get("http://127.0.0.1:5000/health")
+response = requests.get("http://127.0.0.1:5985/health")
 print(response.json())  # {"status": "ok"}
 ```
 
 **JavaScript (fetch)**:
 ```javascript
-fetch('http://127.0.0.1:5000/health')
+fetch('http://127.0.0.1:5985/health')
   .then(response => response.json())
   .then(data => console.log(data));
 ```
 
-## レスポンス形式
+## Response Format
 
-### 成功レスポンス
+### Success Response
 
-すべての成功レスポンスはHTTPステータスコード `200` を返します。
+All success responses return HTTP status code `200`.
 
-### エラーレスポンス
+### Error Response
 
-エラーレスポンスは以下の形式です：
+Error responses have the following format:
 
 ```json
 {
@@ -486,46 +486,46 @@ fetch('http://127.0.0.1:5000/health')
 }
 ```
 
-**HTTPステータスコード**:
-- `400`: リクエストが不正（パラメータ不足、形式エラーなど）
-- `404`: リソースが見つからない（ダウンロードIDが存在しないなど）
-- `500`: サーバー内部エラー
+**HTTP Status Codes**:
+- `400`: Bad request (missing parameters, format errors, etc.)
+- `404`: Resource not found (download ID does not exist, etc.)
+- `500`: Internal server error
 
-## エラーハンドリング
+## Error Handling
 
-### よくあるエラー
+### Common Errors
 
 #### 1. "Missing 'url' parameter"
-- **原因**: `/download`エンドポイントで`url`パラメータが送信されていない
-- **解決方法**: リクエストボディに`url`フィールドを含める
+- **Cause**: `url` parameter not sent to `/download` endpoint
+- **Solution**: Include `url` field in request body
 
 #### 2. "Invalid Spotify URL format"
-- **原因**: 送信されたURLがSpotifyのURL形式ではない
-- **解決方法**: 正しいSpotifyのURLを送信する（`https://open.spotify.com/...`で始まる必要がある）
+- **Cause**: URL sent is not in Spotify URL format
+- **Solution**: Send a valid Spotify URL (must start with `https://open.spotify.com/...`)
 
 #### 3. "Download not found"
-- **原因**: 指定されたダウンロードIDが存在しない
-- **解決方法**: 正しいダウンロードIDを使用する
+- **Cause**: Specified download ID does not exist
+- **Solution**: Use a valid download ID
 
 #### 4. "Download not found or cannot be cancelled"
-- **原因**: ダウンロードが存在しない、または既に完了/失敗/キャンセル済み
-- **解決方法**: 実行中のダウンロードのみキャンセル可能
+- **Cause**: Download does not exist or is already completed/failed/cancelled
+- **Solution**: Only running downloads can be cancelled
 
-## 使用例
+## Usage Examples
 
-### 完全なワークフロー例（Python）
+### Complete Workflow Example (Python)
 
 ```python
 import requests
 import time
 
-BASE_URL = "http://127.0.0.1:5000"
+BASE_URL = "http://127.0.0.1:5985"
 
-# 1. ヘルスチェック
+# 1. Health check
 health = requests.get(f"{BASE_URL}/health")
 print("Server status:", health.json())
 
-# 2. ダウンロードを開始
+# 2. Start download
 spotify_url = "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT"
 download_response = requests.post(
     f"{BASE_URL}/download",
@@ -536,7 +536,7 @@ if download_response.status_code == 200:
     download_id = download_response.json()["download_id"]
     print(f"Download started: {download_id}")
     
-    # 3. 進行状況を監視
+    # 3. Monitor progress
     while True:
         status_response = requests.get(
             f"{BASE_URL}/status",
@@ -557,17 +557,17 @@ if download_response.status_code == 200:
             print("Download was cancelled")
             break
         
-        time.sleep(2)  # 2秒待機してから再チェック
+        time.sleep(2)  # Wait 2 seconds before checking again
 else:
     print(f"Failed to start download: {download_response.json()}")
 ```
 
-### 複数のダウンロードを管理（JavaScript）
+### Managing Multiple Downloads (JavaScript)
 
 ```javascript
-const BASE_URL = 'http://127.0.0.1:5000';
+const BASE_URL = 'http://127.0.0.1:5985';
 
-// ダウンロードを開始する関数
+// Function to start download
 async function startDownload(url) {
   const response = await fetch(`${BASE_URL}/download`, {
     method: 'POST',
@@ -581,19 +581,19 @@ async function startDownload(url) {
   return data.download_id;
 }
 
-// 進行状況を取得する関数
+// Function to get status
 async function getStatus(downloadId) {
   const response = await fetch(`${BASE_URL}/status?id=${downloadId}`);
   return await response.json();
 }
 
-// すべてのダウンロードの状態を取得
+// Get status of all downloads
 async function getAllStatuses() {
   const response = await fetch(`${BASE_URL}/status`);
   return await response.json();
 }
 
-// 使用例
+// Usage example
 async function downloadMultipleTracks() {
   const urls = [
     'https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT',
@@ -601,14 +601,14 @@ async function downloadMultipleTracks() {
     'https://open.spotify.com/track/6rqhFgbbKwnb9MLmUQDhG6'
   ];
   
-  // すべてのダウンロードを開始
+  // Start all downloads
   const downloadIds = await Promise.all(
     urls.map(url => startDownload(url))
   );
   
   console.log('Downloads started:', downloadIds);
   
-  // 定期的に状態をチェック
+  // Check status periodically
   const interval = setInterval(async () => {
     const statuses = await getAllStatuses();
     console.log(`Total: ${statuses.total} downloads`);
@@ -617,7 +617,7 @@ async function downloadMultipleTracks() {
       console.log(`${dl.id}: ${dl.status} (${dl.progress}%)`);
     });
     
-    // すべて完了したら停止
+    // Stop when all are done
     const allDone = statuses.downloads.every(
       dl => ['completed', 'failed', 'cancelled'].includes(dl.status)
     );
@@ -626,55 +626,53 @@ async function downloadMultipleTracks() {
       clearInterval(interval);
       console.log('All downloads finished');
     }
-  }, 3000);  // 3秒ごとにチェック
+  }, 3000);  // Check every 3 seconds
 }
 
-// 実行
+// Run
 downloadMultipleTracks();
 ```
 
-## よくある質問
+## FAQ
 
-### Q: 同時に複数のダウンロードを開始できますか？
+### Q: Can I start multiple downloads simultaneously?
 
-A: はい、可能です。複数の`/download`リクエストを送信することで、同時に複数のダウンロードを実行できます。
+A: Yes, you can. You can start multiple downloads simultaneously by sending multiple `/download` requests.
 
-### Q: ダウンロードの進行状況はどのくらいの頻度で更新されますか？
+### Q: How often is download progress updated?
 
-A: spotDLの出力に基づいて更新されます。`/status`エンドポイントをポーリングして最新の状態を取得できます。推奨ポーリング間隔は2-5秒です。
+A: Progress is updated based on spotDL output. You can poll the `/status` endpoint to get the latest status. Recommended polling interval is 2-5 seconds.
 
-### Q: ダウンロードされたファイルはどこに保存されますか？
+### Q: Where are downloaded files saved?
 
-A: 設定で指定したダウンロード先フォルダに保存されます。デフォルトは`~/Music/SpiceDL`です。GUI設定画面または`config.json`で変更できます。
+A: Files are saved to the download folder specified in settings. Default is `~/Music/SpiceDL`. You can change this in the GUI settings window or `config.json`.
 
-### Q: サーバーを再起動すると、進行中のダウンロードはどうなりますか？
+### Q: What happens to in-progress downloads when the server is restarted?
 
-A: サーバーを再起動すると、進行中のダウンロード情報は失われます。ダウンロード自体はspotDLプロセスが継続する場合がありますが、API経由で状態を追跡することはできなくなります。
+A: When the server is restarted, in-progress download information is lost. The download itself may continue if the spotDL process continues, but you won't be able to track its status via the API.
 
-### Q: どのようなSpotifyのURL形式に対応していますか？
+### Q: What Spotify URL formats are supported?
 
-A: 以下の形式に対応しています：
-- トラック: `https://open.spotify.com/track/{id}`
-- アルバム: `https://open.spotify.com/album/{id}`
-- プレイリスト: `https://open.spotify.com/playlist/{id}`
-- アーティスト: `https://open.spotify.com/artist/{id}`
+A: The following formats are supported:
+- Track: `https://open.spotify.com/track/{id}`
+- Album: `https://open.spotify.com/album/{id}`
+- Playlist: `https://open.spotify.com/playlist/{id}`
+- Artist: `https://open.spotify.com/artist/{id}`
 
-### Q: エラーが発生した場合、どのようにデバッグすればよいですか？
+### Q: How do I debug when an error occurs?
 
-A: ダウンロードが失敗した場合、`/status`エンドポイントのレスポンスに`error`フィールドが含まれます。このフィールドにはエラーの詳細が含まれています。また、サーバーのコンソール出力も確認してください。
+A: When a download fails, the `/status` endpoint response includes an `error` field. This field contains error details. Also check the server console output.
 
-### Q: APIサーバーのポートを変更できますか？
+### Q: Can I change the API server port?
 
-A: はい、GUI設定画面から変更できます。または`config.json`ファイルを直接編集することもできます。
+A: Yes, you can change it from the GUI settings window. You can also edit the `config.json` file directly.
 
-### Q: リモートからAPIにアクセスできますか？
+### Q: Can I access the API remotely?
 
-A: デフォルトでは`127.0.0.1`（localhost）でのみリッスンしています。リモートアクセスを許可するには、設定で`host`を`0.0.0.0`に変更してください。ただし、セキュリティに注意してください。
+A: By default, it only listens on `127.0.0.1` (localhost). To allow remote access, change `host` to `0.0.0.0` in settings. However, be careful about security.
 
 ---
 
-## サポート
+## Support
 
-問題が発生した場合や質問がある場合は、プロジェクトのGitHubリポジトリのIssuesセクションで報告してください。
-
-
+If you encounter issues or have questions, please report them in the Issues section of the project's GitHub repository.

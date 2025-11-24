@@ -104,10 +104,10 @@ OPTIONS = {
     ],
     'iconfile': None,  # Add path to .icns file if available
     'plist': {
-        'CFBundleName': 'spiceDL2 API',
-        'CFBundleDisplayName': 'spiceDL2 API',
-        'CFBundleGetInfoString': 'spiceDL2 API Server',
-        'CFBundleIdentifier': 'com.spicedl2.api',
+        'CFBundleName': 'SpiceDL API',
+        'CFBundleDisplayName': 'SpiceDL API',
+        'CFBundleGetInfoString': 'SpiceDL API Server',
+        'CFBundleIdentifier': 'com.spicedl.api',
         'CFBundleVersion': '1.0.0',
         'CFBundleShortVersionString': '1.0.0',
         'NSHighResolutionCapable': True,
@@ -121,8 +121,8 @@ setup(
     data_files=DATA_FILES,
     options={'py2app': OPTIONS},
     setup_requires=['py2app'],
-    name='spiceDL2 API',
+    name='SpiceDL API',
     version='1.0.0',
-    description='spiceDL2 API Server',
+    description='SpiceDL API Server',
 )
 

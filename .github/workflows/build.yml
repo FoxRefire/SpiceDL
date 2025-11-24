@@ -212,7 +212,7 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ steps.version.outputs.version }}
           body: |
-            ## spiceDL2 API ${{ steps.version.outputs.version }}
+            ## SpiceDL API ${{ steps.version.outputs.version }}
             
             ### ダウンロード
             

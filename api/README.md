@@ -1,62 +1,62 @@
 # SpiceDL API Server
 
-マルチプラットフォーム対応のSpotifyダウンロードAPIサーバー
+Multi-platform Spotify download API server
 
-## 機能
+## Features
 
-- REST APIでSpotifyのURLを受け取り、spotDLを使ってダウンロード
-- ダウンロード進行状況の取得
-- GUI設定画面（ダウンロード先フォルダ、ポート設定など）
-- タスクバーにアイコンを常駐
+- REST API to receive Spotify URLs and download using spotDL
+- Download progress tracking
+- GUI settings window (download folder, port settings, etc.)
+- System tray icon
 
-## セットアップ
+## Setup
 
-### 1. spotDLのインストール
+### 1. Install spotDL
 
-まず、spotDLをインストールする必要があります：
+First, you need to install spotDL:
 
 ```bash
-# pipでインストール
+# Install via pip
 pip install spotdl
 
-# または、最新版をインストール
+# Or install the latest version
 pip install git+https://github.com/spotDL/spotify-downloader.git
 ```
 
-### 2. Python依存関係のインストール
+### 2. Install Python Dependencies
 
 ```bash
 cd api
 pip install -r requirements.txt
 ```
 
-## 使用方法
+## Usage
 
-詳細なAPIドキュメントについては、[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)を参照してください。
+For detailed API documentation, see [API_DOCUMENTATION.md](./API_DOCUMENTATION.md).
 
-### 起動
+### Starting the Server
 
 ```bash
 python app.py
 ```
 
-起動すると：
-- タスクバーにアイコンが表示されます
-- アイコンを右クリックして「Settings」から設定を変更できます
-- デフォルトで `http://127.0.0.1:5000` でAPIサーバーが起動します
+When started:
+- An icon will appear in the system tray
+- Right-click the icon and select "Settings" to change settings
+- The API server starts at `http://127.0.0.1:5985` by default
 
-### APIエンドポイント
+### API Endpoints
 
 #### POST /download
-SpotifyのURLを送信してダウンロードを開始
+Send a Spotify URL to start a download
 
 ```bash
-curl -X POST http://127.0.0.1:5000/download \
+curl -X POST http://127.0.0.1:5985/download \
   -H "Content-Type: application/json" \
   -d '{"url": "https://open.spotify.com/track/..."}'
 ```
 
-レスポンス:
+Response:
 ```json
 {
   "success": true,
@@ -66,17 +66,17 @@ curl -X POST http://127.0.0.1:5000/download \
 ```
 
 #### GET /status
-ダウンロードの進行状況を取得
+Get download progress
 
 ```bash
-# すべてのダウンロードの状態を取得
-curl http://127.0.0.1:5000/status
+# Get status of all downloads
+curl http://127.0.0.1:5985/status
 
-# 特定のダウンロードの状態を取得
-curl http://127.0.0.1:5000/status?id=dl_20240101_120000_123456
+# Get status of a specific download
+curl http://127.0.0.1:5985/status?id=dl_20240101_120000_123456
 ```
 
-レスポンス:
+Response:
 ```json
 {
   "id": "dl_20240101_120000_123456",
@@ -91,42 +91,41 @@ curl http://127.0.0.1:5000/status?id=dl_20240101_120000_123456
 ```
 
 #### POST /cancel
-ダウンロードをキャンセル
+Cancel a download
 
 ```bash
-curl -X POST http://127.0.0.1:5000/cancel \
+curl -X POST http://127.0.0.1:5985/cancel \
   -H "Content-Type: application/json" \
   -d '{"id": "dl_20240101_120000_123456"}'
 ```
 
 #### GET /health
-ヘルスチェック
+Health check
 
 ```bash
-curl http://127.0.0.1:5000/health
+curl http://127.0.0.1:5985/health
 ```
 
-## 設定
+## Configuration
 
-設定は `config.json` ファイルに保存されます。GUIから変更するか、直接編集することもできます。
+Settings are saved in the `config.json` file. You can change them from the GUI or edit directly.
 
 ```json
 {
   "download_folder": "/path/to/downloads",
-  "port": 5000,
+  "port": 5985,
   "host": "127.0.0.1"
 }
 ```
 
-## 対応プラットフォーム
+## Supported Platforms
 
 - Windows
 - macOS
 - Linux
 
-## 注意事項
+## Notes
 
-- spotDLが正しくインストールされている必要があります
-- ダウンロード先フォルダへの書き込み権限が必要です
-- 初回起動時は設定ウィンドウが表示される場合があります
-
+- spotDL must be properly installed
+- Write permissions are required for the download folder
+- The settings window may appear on first launch

@@ -59,8 +59,8 @@ if command -v fpm &> /dev/null; then
         -n "${PROJECT_NAME}" \
         -v "${VERSION}" \
         -a "${ARCH}" \
-        --description "spiceDL2 API Server" \
-        --maintainer "spiceDL2 Team" \
+        --description "SpiceDL API Server" \
+        --maintainer "FoxRefire" \
         --depends "python3" \
         --depends "python3-pip" \
         --depends "python3-venv" \
@@ -87,8 +87,8 @@ if command -v fpm &> /dev/null; then
         -n "${PROJECT_NAME}" \
         -v "${VERSION}" \
         -a "${ARCH}" \
-        --description "spiceDL2 API Server" \
-        --maintainer "spiceDL2 Team" \
+        --description "SpiceDL API Server" \
+        --maintainer "FoxRefire" \
         --depends "python3" \
         --depends "python3-pip" \
         -C "${PACKAGE_DIR}" \
