@@ -64,8 +64,21 @@ class I18n:
             if lang_env.upper() in ("C", "POSIX"):
                 return "en"
             
-            # LANG format is usually like "en_US.UTF-8" or "ja_JP.UTF-8"
-            lang = lang_env.split("_")[0].split(".")[0].lower()
+            # LANG format is usually like "en_US.UTF-8" or "ja_JP.UTF-8" or "zh_CN.UTF-8"
+            # Handle Chinese variants: zh_CN -> zh_CN, zh_TW -> zh_TW, zh -> zh_CN (default)
+            parts = lang_env.split("_")
+            if len(parts) >= 2 and parts[0].lower() == "zh":
+                # Chinese variant
+                region = parts[1].split(".")[0].upper()
+                if region in ("CN", "HANS", "HAN"):
+                    lang = "zh_CN"
+                elif region in ("TW", "HK", "MO", "HANT"):
+                    lang = "zh_TW"
+                else:
+                    lang = "zh_CN"  # Default to simplified
+            else:
+                lang = parts[0].split(".")[0].lower()
+            
             if self._has_translations(lang):
                 return lang
         
@@ -76,7 +89,19 @@ class I18n:
             if lc_all.upper() in ("C", "POSIX"):
                 return "en"
             
-            lang = lc_all.split("_")[0].split(".")[0].lower()
+            # Handle Chinese variants
+            parts = lc_all.split("_")
+            if len(parts) >= 2 and parts[0].lower() == "zh":
+                region = parts[1].split(".")[0].upper()
+                if region in ("CN", "HANS", "HAN"):
+                    lang = "zh_CN"
+                elif region in ("TW", "HK", "MO", "HANT"):
+                    lang = "zh_TW"
+                else:
+                    lang = "zh_CN"
+            else:
+                lang = parts[0].split(".")[0].lower()
+            
             if self._has_translations(lang):
                 return lang
         
@@ -87,7 +112,19 @@ class I18n:
             if lc_messages.upper() in ("C", "POSIX"):
                 return "en"
             
-            lang = lc_messages.split("_")[0].split(".")[0].lower()
+            # Handle Chinese variants
+            parts = lc_messages.split("_")
+            if len(parts) >= 2 and parts[0].lower() == "zh":
+                region = parts[1].split(".")[0].upper()
+                if region in ("CN", "HANS", "HAN"):
+                    lang = "zh_CN"
+                elif region in ("TW", "HK", "MO", "HANT"):
+                    lang = "zh_TW"
+                else:
+                    lang = "zh_CN"
+            else:
+                lang = parts[0].split(".")[0].lower()
+            
             if self._has_translations(lang):
                 return lang
         
@@ -95,7 +132,19 @@ class I18n:
         try:
             system_locale, _ = locale.getdefaultlocale()
             if system_locale:
-                lang = system_locale.split("_")[0].lower()
+                # Handle Chinese variants
+                parts = system_locale.split("_")
+                if len(parts) >= 2 and parts[0].lower() == "zh":
+                    region = parts[1].split(".")[0].upper()
+                    if region in ("CN", "HANS", "HAN"):
+                        lang = "zh_CN"
+                    elif region in ("TW", "HK", "MO", "HANT"):
+                        lang = "zh_TW"
+                    else:
+                        lang = "zh_CN"
+                else:
+                    lang = parts[0].split(".")[0].lower()
+                
                 if self._has_translations(lang):
                     return lang
         except Exception:

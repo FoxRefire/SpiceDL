@@ -1,0 +1,33 @@
+{
+  "ui": {
+    "title": "Configuración de API SpiceDL",
+    "subtitle": "Configure sus preferencias de descarga y servidor",
+    "download_settings": "Configuración de Descarga",
+    "download_folder": "Carpeta de Descarga",
+    "download_folder_placeholder": "Seleccione una carpeta para descargas...",
+    "browse": "Examinar...",
+    "server_settings": "Configuración del Servidor",
+    "host_address": "Dirección del Host",
+    "port_number": "Número de Puerto",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "select_download_folder": "Seleccionar Carpeta de Descarga",
+    "success": "Éxito",
+    "settings_saved": "¡Configuración guardada exitosamente!",
+    "error": "Error",
+    "invalid_input": "Entrada inválida: {message}",
+    "failed_to_save": "Error al guardar la configuración: {message}",
+    "port_required": "El número de puerto es requerido",
+    "port_range": "El puerto debe estar entre 1 y 65535",
+    "folder_required": "La carpeta de descarga es requerida",
+    "host_required": "La dirección del host es requerida"
+  },
+  "tray": {
+    "tooltip": "Servidor API SpiceDL",
+    "settings": "Configuración",
+    "status": "Estado",
+    "quit": "Salir",
+    "active_downloads": "Descargas activas: {count}"
+  }
+}
+

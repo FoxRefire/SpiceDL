@@ -1,0 +1,33 @@
+{
+  "ui": {
+    "title": "Paramètres API SpiceDL",
+    "subtitle": "Configurez vos paramètres de téléchargement et préférences du serveur",
+    "download_settings": "Paramètres de Téléchargement",
+    "download_folder": "Dossier de Téléchargement",
+    "download_folder_placeholder": "Sélectionnez un dossier pour les téléchargements...",
+    "browse": "Parcourir...",
+    "server_settings": "Paramètres du Serveur",
+    "host_address": "Adresse de l'Hôte",
+    "port_number": "Numéro de Port",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "select_download_folder": "Sélectionner le Dossier de Téléchargement",
+    "success": "Succès",
+    "settings_saved": "Paramètres enregistrés avec succès !",
+    "error": "Erreur",
+    "invalid_input": "Entrée invalide : {message}",
+    "failed_to_save": "Échec de l'enregistrement des paramètres : {message}",
+    "port_required": "Le numéro de port est requis",
+    "port_range": "Le port doit être entre 1 et 65535",
+    "folder_required": "Le dossier de téléchargement est requis",
+    "host_required": "L'adresse de l'hôte est requise"
+  },
+  "tray": {
+    "tooltip": "Serveur API SpiceDL",
+    "settings": "Paramètres",
+    "status": "Statut",
+    "quit": "Quitter",
+    "active_downloads": "Téléchargements actifs : {count}"
+  }
+}
+

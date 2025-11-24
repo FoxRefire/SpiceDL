@@ -1,0 +1,33 @@
+{
+  "ui": {
+    "title": "SpiceDL API 設定",
+    "subtitle": "設定您的下載設定和伺服器偏好",
+    "download_settings": "下載設定",
+    "download_folder": "下載資料夾",
+    "download_folder_placeholder": "選擇下載資料夾...",
+    "browse": "瀏覽...",
+    "server_settings": "伺服器設定",
+    "host_address": "主機位址",
+    "port_number": "連接埠號",
+    "cancel": "取消",
+    "save": "儲存",
+    "select_download_folder": "選擇下載資料夾",
+    "success": "成功",
+    "settings_saved": "設定已成功儲存！",
+    "error": "錯誤",
+    "invalid_input": "無效輸入：{message}",
+    "failed_to_save": "儲存設定失敗：{message}",
+    "port_required": "需要連接埠號",
+    "port_range": "連接埠必須在1到65535之間",
+    "folder_required": "需要下載資料夾",
+    "host_required": "需要主機位址"
+  },
+  "tray": {
+    "tooltip": "SpiceDL API 伺服器",
+    "settings": "設定",
+    "status": "狀態",
+    "quit": "結束",
+    "active_downloads": "活動下載：{count}"
+  }
+}
+

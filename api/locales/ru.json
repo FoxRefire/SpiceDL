@@ -1,0 +1,33 @@
+{
+  "ui": {
+    "title": "Настройки API SpiceDL",
+    "subtitle": "Настройте параметры загрузки и предпочтения сервера",
+    "download_settings": "Настройки Загрузки",
+    "download_folder": "Папка Загрузки",
+    "download_folder_placeholder": "Выберите папку для загрузок...",
+    "browse": "Обзор...",
+    "server_settings": "Настройки Сервера",
+    "host_address": "Адрес Хоста",
+    "port_number": "Номер Порта",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "select_download_folder": "Выбрать Папку Загрузки",
+    "success": "Успешно",
+    "settings_saved": "Настройки успешно сохранены!",
+    "error": "Ошибка",
+    "invalid_input": "Неверный ввод: {message}",
+    "failed_to_save": "Не удалось сохранить настройки: {message}",
+    "port_required": "Требуется номер порта",
+    "port_range": "Порт должен быть от 1 до 65535",
+    "folder_required": "Требуется папка загрузки",
+    "host_required": "Требуется адрес хоста"
+  },
+  "tray": {
+    "tooltip": "Сервер API SpiceDL",
+    "settings": "Настройки",
+    "status": "Статус",
+    "quit": "Выход",
+    "active_downloads": "Активные загрузки: {count}"
+  }
+}
+

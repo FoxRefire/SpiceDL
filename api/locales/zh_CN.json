@@ -1,0 +1,33 @@
+{
+  "ui": {
+    "title": "SpiceDL API 设置",
+    "subtitle": "配置您的下载设置和服务器首选项",
+    "download_settings": "下载设置",
+    "download_folder": "下载文件夹",
+    "download_folder_placeholder": "选择下载文件夹...",
+    "browse": "浏览...",
+    "server_settings": "服务器设置",
+    "host_address": "主机地址",
+    "port_number": "端口号",
+    "cancel": "取消",
+    "save": "保存",
+    "select_download_folder": "选择下载文件夹",
+    "success": "成功",
+    "settings_saved": "设置已成功保存！",
+    "error": "错误",
+    "invalid_input": "无效输入：{message}",
+    "failed_to_save": "保存设置失败：{message}",
+    "port_required": "需要端口号",
+    "port_range": "端口必须在1到65535之间",
+    "folder_required": "需要下载文件夹",
+    "host_required": "需要主机地址"
+  },
+  "tray": {
+    "tooltip": "SpiceDL API 服务器",
+    "settings": "设置",
+    "status": "状态",
+    "quit": "退出",
+    "active_downloads": "活动下载：{count}"
+  }
+}
+
