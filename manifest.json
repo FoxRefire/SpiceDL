@@ -1,0 +1,25 @@
+{
+  "name": "SpiceDL",
+  "version": "0.1.0",
+  "description": "Download musics using spotDL",
+  "main": "src/app.tsx",
+  "author": "FoxRefire",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FoxRefire/SpiceDL.git"
+  },
+  "keywords": [
+    "spicetify",
+    "spotify",
+    "download",
+    "music",
+    "spotdl"
+  ],
+  "spicetify": {
+    "name": "SpiceDL",
+    "description": "Download music from Spotify with spotDL",
+    "entry": "src/app.tsx"
+  }
+}
+

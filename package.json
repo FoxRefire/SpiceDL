@@ -1,13 +1,28 @@
 {
   "name": "spicedl",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
+  "description": "Download music from Spotify directly from the Spicetify interface. Integrates with SpiceDL API server to manage downloads.",
+  "main": "src/app.tsx",
+  "author": "SpiceDL Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FoxRefire/SpiceDL.git"
+  },
+  "keywords": [
+    "spicetify",
+    "spicetify-extensions",
+    "spotify",
+    "download",
+    "music",
+    "spotdl"
+  ],
   "scripts": {
     "build": "spicetify-creator",
     "build-local": "spicetify-creator --out=dist --minify",
     "watch": "spicetify-creator --watch"
   },
-  "license": "MIT",
   "devDependencies": {
     "@types/react": "^19.2.6",
     "@types/react-dom": "^19.2.3",
