@@ -208,8 +208,6 @@ class I18n {
         apiServerSettings: "API Server Settings",
         apiServerSettingsDesc: "To change API server settings such as download folder and port, click the button below.",
         openApiServerSettings: "Open API Server Settings",
-        currentSettings: "Current Settings:",
-        apiUrl: "API URL:",
       },
     };
   }
@@ -281,8 +279,6 @@ class I18n {
         apiServerSettings: "APIサーバー設定",
         apiServerSettingsDesc: "ダウンロードフォルダやポートなどのAPIサーバー設定を変更するには、下のボタンをクリックしてください。",
         openApiServerSettings: "APIサーバー設定を開く",
-        currentSettings: "現在の設定:",
-        apiUrl: "API URL:",
       },
     };
   }

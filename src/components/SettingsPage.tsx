@@ -263,26 +263,6 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
             {t("settings.openApiServerSettings")}
           </button>
         </div>
-
-        <div
-          style={{
-            marginTop: "20px",
-            padding: "12px",
-            backgroundColor: "var(--spice-card)",
-            borderRadius: "4px",
-            fontSize: "12px",
-            color: "var(--spice-text-subdued)",
-          }}
-        >
-          <strong>{t("settings.currentSettings")}</strong>
-          <br />
-          {t("settings.apiHost")}: {apiHost}
-          <br />
-          {t("settings.apiPort")}: {apiPort}
-          <br />
-          <br />
-          {t("settings.apiUrl")} http://{apiHost}:{apiPort}
-        </div>
       </div>
     </div>
   );
