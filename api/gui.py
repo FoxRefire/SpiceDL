@@ -63,13 +63,17 @@ class SettingsGUI(QMainWindow):
         self.signal_obj = ConfigChangedSignal()
         self.i18n = get_i18n()
         
-        # Set language from config or detect from system
-        language = config_manager.get("language")
-        if language:
-            self.i18n.set_language(language)
-        else:
-            detected_lang = self.i18n.detect_language()
-            self.i18n.set_language(detected_lang)
+        # Always detect language from environment/system first, then fallback to config
+        # This ensures LANG environment variable takes precedence
+        detected_lang = self.i18n.detect_language()
+        config_language = config_manager.get("language")
+        
+        # Use detected language if available, otherwise use config
+        language_to_use = detected_lang or config_language or "en"
+        self.i18n.set_language(language_to_use)
+        
+        # Update config if detected language differs from stored config
+        if detected_lang and detected_lang != config_language:
             config_manager.set("language", detected_lang)
         
         # Modern color scheme
