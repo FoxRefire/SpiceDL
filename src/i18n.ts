@@ -241,7 +241,6 @@ class I18n {
         apiServerSettings: "API Server Settings",
         apiServerSettingsDesc: "To change API server settings such as download folder and port, click the button below.",
         openApiServerSettings: "Open API Server Settings",
-
       },
     };
   }
@@ -313,7 +312,6 @@ class I18n {
         apiServerSettings: "APIサーバー設定",
         apiServerSettingsDesc: "ダウンロードフォルダやポートなどのAPIサーバー設定を変更するには、下のボタンをクリックしてください。",
         openApiServerSettings: "APIサーバー設定を開く",
-
       },
     };
   }
@@ -385,7 +383,6 @@ class I18n {
         apiServerSettings: "Configuración del Servidor API",
         apiServerSettingsDesc: "Para cambiar la configuración del servidor API como la carpeta de descarga y el puerto, haga clic en el botón de abajo.",
         openApiServerSettings: "Abrir Configuración del Servidor API",
-
       },
     };
   }
@@ -457,7 +454,6 @@ class I18n {
         apiServerSettings: "Impostazioni Server API",
         apiServerSettingsDesc: "Per modificare le impostazioni del server API come la cartella di download e la porta, fare clic sul pulsante sottostante.",
         openApiServerSettings: "Apri Impostazioni Server API",
-
       },
     };
   }
@@ -529,7 +525,6 @@ class I18n {
         apiServerSettings: "Paramètres du Serveur API",
         apiServerSettingsDesc: "Pour modifier les paramètres du serveur API tels que le dossier de téléchargement et le port, cliquez sur le bouton ci-dessous.",
         openApiServerSettings: "Ouvrir les Paramètres du Serveur API",
-
       },
     };
   }
@@ -601,7 +596,6 @@ class I18n {
         apiServerSettings: "Настройки Сервера API",
         apiServerSettingsDesc: "Чтобы изменить настройки сервера API, такие как папка загрузки и порт, нажмите кнопку ниже.",
         openApiServerSettings: "Открыть Настройки Сервера API",
-
       },
     };
   }
@@ -743,7 +737,7 @@ class I18n {
         saveFailed: "儲存設定失敗",
         apiServerSettings: "API 伺服器設定",
         apiServerSettingsDesc: "要變更 API 伺服器設定（如下載資料夾和連接埠），請按一下下面的按鈕。",
-        openApiServerSettings: "開啟 API 伺服器設定"
+        openApiServerSettings: "開啟 API 伺服器設定",
       },
     };
   }
