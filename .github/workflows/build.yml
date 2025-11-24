@@ -181,9 +181,96 @@ jobs:
           name: app-package
           path: api/build/py2app/dist/*.app
 
+  build-python-zip:
+    name: Build Python Scripts ZIP
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Extract version
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+          else
+            VERSION=${{ github.event.inputs.version || '1.0.0' }}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+      
+      - name: Create ZIP archive
+        working-directory: ./api
+        run: |
+          # Create temporary directory for ZIP contents
+          mkdir -p ../zip_build
+          
+          # Copy Python scripts (excluding build-related files)
+          cp app.py config_manager.py download_manager.py gui.py i18n.py main.py tray_app.py ../zip_build/
+          
+          # Copy configuration and requirements
+          cp config.json requirements.txt ../zip_build/
+          
+          # Copy locales directory
+          cp -r locales ../zip_build/
+          
+          # Copy documentation (optional but useful)
+          cp README.md API_DOCUMENTATION.md ../zip_build/ 2>/dev/null || true
+          
+          # Create ZIP file
+          cd ../zip_build
+          zip -r spicedl2-api-scripts-${{ steps.version.outputs.version }}.zip .
+      
+      - name: Upload ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-scripts-zip
+          path: zip_build/spicedl2-api-scripts-${{ steps.version.outputs.version }}.zip
+
+  build-spicetify-extension:
+    name: Build Spicetify Extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Extract version
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+          else
+            VERSION=${{ github.event.inputs.version || '1.0.0' }}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build extension
+        run: npm run build
+      
+      - name: Create ZIP archive
+        run: |
+          # Create ZIP file from dist directory
+          cd dist
+          zip -r ../spicedl2-extension-${{ steps.version.outputs.version }}.zip .
+          cd ..
+      
+      - name: Upload extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: spicetify-extension
+          path: spicedl2-extension-${{ steps.version.outputs.version }}.zip
+
   create-release:
     name: Create Release
-    needs: [build-linux-deb, build-linux-rpm, build-windows-exe, build-macos-app]
+    needs: [build-linux-deb, build-linux-rpm, build-windows-exe, build-macos-app, build-python-zip, build-spicetify-extension]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
@@ -209,36 +296,67 @@ jobs:
             artifacts/rpm-package/*.rpm
             artifacts/exe-package/*.exe
             artifacts/app-package/*.app
+            artifacts/python-scripts-zip/*.zip
+            artifacts/spicetify-extension/*.zip
           tag_name: ${{ github.ref_name }}
           name: Release ${{ steps.version.outputs.version }}
           body: |
-            ## SpiceDL API ${{ steps.version.outputs.version }}
+            ## SpiceDL ${{ steps.version.outputs.version }}
             
             ### ダウンロード
             
+            #### API Server
             - **Linux (Debian/Ubuntu)**: `.deb` パッケージ
             - **Linux (Red Hat/CentOS/Fedora)**: `.rpm` パッケージ
             - **Windows**: `.exe` 実行ファイル
             - **macOS**: `.app` アプリケーションバンドル
+            - **Pythonスクリプト**: `.zip` ファイル（直接実行用）
+            
+            #### Spicetify Extension
+            - **Extension**: `.zip` ファイル
             
             ### インストール方法
             
-            #### DEB (Debian/Ubuntu)
+            #### API Server
+            
+            ##### DEB (Debian/Ubuntu)
             ```bash
             sudo dpkg -i spicedl2-api_*.deb
             sudo apt-get install -f  # 依存関係の解決
             ```
             
-            #### RPM (Red Hat/CentOS/Fedora)
+            ##### RPM (Red Hat/CentOS/Fedora)
             ```bash
             sudo rpm -i spicedl2-api-*.rpm
             ```
             
-            #### Windows
+            ##### Windows
             `.exe` ファイルをダウンロードして実行してください。
             
-            #### macOS
+            ##### macOS
             `.app` バンドルをダウンロードして、アプリケーションフォルダに移動してください。
+            
+            ##### Pythonスクリプト（直接実行用）
+            ZIPファイルを展開し、以下のコマンドで依存関係をインストールしてから実行してください：
+            ```bash
+            pip install -r requirements.txt
+            python app.py
+            ```
+            
+            #### Spicetify Extension
+            1. ZIPファイルをダウンロードして展開
+            2. 展開したファイルをSpicetifyの拡張機能ディレクトリにコピー：
+               ```bash
+               # Windows
+               %USERPROFILE%\.spicetify\Extensions\spicedl\
+               
+               # macOS/Linux
+               ~/.spicetify/Extensions/spicedl/
+               ```
+            3. Spicetifyを再適用：
+               ```bash
+               spicetify apply
+               ```
           draft: false
           prerelease: false
         env:
