@@ -16,14 +16,17 @@ async function main() {
   }
 
   // Initialize i18n and set language
+  // Always detect language from Spotify first, then fallback to config
   const i18n = getI18n();
+  const detectedLang = i18n.detectLanguage();
   const config = Config.getConfig();
-  if (config.language) {
-    i18n.setLanguage(config.language);
-  } else {
-    const detectedLang = i18n.detectLanguage();
-    i18n.setLanguage(detectedLang);
-    // Save detected language to config
+  
+  // Use detected language if available, otherwise use config
+  const languageToUse = detectedLang || config.language || "en";
+  i18n.setLanguage(languageToUse);
+  
+  // Update config if detected language differs from stored config
+  if (detectedLang && detectedLang !== config.language) {
     Config.saveConfig({ language: detectedLang });
   }
 

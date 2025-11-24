@@ -34,18 +34,41 @@ class I18n {
 
   /**
    * Detect system language from Spicetify or browser
+   * @returns Language code or null if detection failed
    */
-  detectLanguage(): string {
+  detectLanguage(): string | null {
     try {
-      // Try to get language from Spicetify
+      // Try to get language from Spicetify Locale
+      // Check multiple ways to get the locale
+      let locale: string | null = null;
+      
       if (Spicetify?.Locale) {
-        const locale = Spicetify.Locale.getLocale();
-        if (locale) {
-          const lang = locale.split("-")[0].toLowerCase();
-          // Check if we have translations for this language
-          if (this.hasLanguage(lang)) {
-            return lang;
+        try {
+          // Method 1: Try getLocale() method
+          if (typeof Spicetify.Locale.getLocale === "function") {
+            locale = Spicetify.Locale.getLocale();
           }
+          // Method 2: Try accessing _locale directly (internal property)
+          if (!locale && (Spicetify.Locale as any)._locale) {
+            locale = (Spicetify.Locale as any)._locale;
+          }
+          // Method 3: Try getUrlLocale() as fallback
+          if (!locale && typeof Spicetify.Locale.getUrlLocale === "function") {
+            const urlLocale = Spicetify.Locale.getUrlLocale();
+            if (urlLocale) {
+              locale = urlLocale;
+            }
+          }
+        } catch (e) {
+          console.warn("Error getting locale from Spicetify.Locale:", e);
+        }
+      }
+      
+      if (locale) {
+        const lang = locale.split("-")[0].toLowerCase();
+        // Check if we have translations for this language
+        if (this.hasLanguage(lang)) {
+          return lang;
         }
       }
 
@@ -61,7 +84,7 @@ class I18n {
       console.warn("Error detecting language:", e);
     }
 
-    return "en"; // Default to English
+    return null; // Return null to indicate detection failed, let caller use fallback
   }
 
   /**
@@ -322,7 +345,9 @@ export function getI18n(): I18n {
     i18nInstance = new I18n();
     // Try to detect and set language
     const detectedLang = i18nInstance.detectLanguage();
-    i18nInstance.setLanguage(detectedLang);
+    if (detectedLang) {
+      i18nInstance.setLanguage(detectedLang);
+    }
   }
   return i18nInstance;
 }
@@ -337,8 +362,10 @@ export function t(key: string, params?: Record<string, string | number>): string
 /**
  * Set the current language
  */
-export function setLanguage(lang: string): void {
-  getI18n().setLanguage(lang);
+export function setLanguage(lang: string | null): void {
+  if (lang) {
+    getI18n().setLanguage(lang);
+  }
 }
 
 /**
