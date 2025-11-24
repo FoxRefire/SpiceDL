@@ -172,14 +172,19 @@ class I18n:
                 print(f"Error loading locale file {locale_file}: {e}")
                 # Fallback to English if loading fails
                 if lang != "en":
+                    print(f"Falling back to English due to error")
                     self._load_language("en")
                     self.current_language = "en"
         else:
-            # If language file doesn't exist, try to load English as fallback
+            # If language file doesn't exist, load English as fallback
             if lang != "en":
-                print(f"Locale file {locale_file} not found, falling back to English")
+                print(f"Locale file {locale_file} not found, language '{lang}' is not supported. Falling back to English.")
                 self._load_language("en")
                 self.current_language = "en"
+            else:
+                # Even for English, if file doesn't exist, create a minimal translation
+                print(f"Warning: English locale file not found, using minimal translations")
+                self.translations["en"] = {}
     
     def t(self, key: str, **kwargs) -> str:
         """

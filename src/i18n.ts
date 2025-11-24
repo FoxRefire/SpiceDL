@@ -34,9 +34,9 @@ class I18n {
 
   /**
    * Detect system language from Spicetify or browser
-   * @returns Language code or null if detection failed
+   * @returns Language code (defaults to "en" if unsupported language detected)
    */
-  detectLanguage(): string | null {
+  detectLanguage(): string {
     try {
       // Try to get language from Spicetify Locale
       // Check multiple ways to get the locale
@@ -100,7 +100,8 @@ class I18n {
       console.warn("Error detecting language:", e);
     }
 
-    return null; // Return null to indicate detection failed, let caller use fallback
+    // If no supported language detected, default to English
+    return "en";
   }
 
   /**
@@ -160,8 +161,9 @@ class I18n {
         this.translations.set("zh-TW", this.getDefaultTraditionalChineseTranslations());
         this.currentLanguage = "zh-TW";
       } else {
-        // Fallback to English
-        this.translations.set(lang, this.getDefaultEnglishTranslations());
+        // Fallback to English for unsupported languages
+        console.warn(`Language "${lang}" is not supported, falling back to English`);
+        this.translations.set("en", this.getDefaultEnglishTranslations());
         this.currentLanguage = "en";
       }
     } catch (e) {
@@ -798,11 +800,9 @@ let i18nInstance: I18n | null = null;
 export function getI18n(): I18n {
   if (!i18nInstance) {
     i18nInstance = new I18n();
-    // Try to detect and set language
+    // Try to detect and set language (always returns a language, defaults to "en")
     const detectedLang = i18nInstance.detectLanguage();
-    if (detectedLang) {
-      i18nInstance.setLanguage(detectedLang);
-    }
+    i18nInstance.setLanguage(detectedLang);
   }
   return i18nInstance;
 }
@@ -817,10 +817,8 @@ export function t(key: string, params?: Record<string, string | number>): string
 /**
  * Set the current language
  */
-export function setLanguage(lang: string | null): void {
-  if (lang) {
-    getI18n().setLanguage(lang);
-  }
+export function setLanguage(lang: string): void {
+  getI18n().setLanguage(lang);
 }
 
 /**
