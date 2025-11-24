@@ -2,8 +2,10 @@
  * Main Spicetify extension for SpiceDL download functionality
  */
 import * as API from "./api";
+import * as Config from "./config";
 import DownloadStatusPage from "./components/DownloadStatusPage";
 import SettingsPage from "./components/SettingsPage";
+import { t, getI18n } from "./i18n";
 
 const { React, ReactDOM } = Spicetify;
 
@@ -13,38 +15,50 @@ async function main() {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
+  // Initialize i18n and set language
+  const i18n = getI18n();
+  const config = Config.getConfig();
+  if (config.language) {
+    i18n.setLanguage(config.language);
+  } else {
+    const detectedLang = i18n.detectLanguage();
+    i18n.setLanguage(detectedLang);
+    // Save detected language to config
+    Config.saveConfig({ language: detectedLang });
+  }
+
   // Check API availability
   const apiAvailable = await API.checkHealth();
   if (!apiAvailable) {
     Spicetify.showNotification(
-      "Cannot connect to SpiceDL API server. Please check if the server is running.",
+      t("notifications.apiUnavailable"),
       true
     );
   }
 
   // Register context menu items for tracks
   const trackDownloadItem = new Spicetify.ContextMenu.Item(
-    "Download with SpiceDL",
+    t("menu.downloadTrack"),
     async (uris) => {
       for (const uri of uris) {
         try {
           // Convert Spotify URI to URL
           const url = convertUriToUrl(uri);
           if (!url) {
-            Spicetify.showNotification("Invalid URI", true);
+            Spicetify.showNotification(t("notifications.invalidUri"), true);
             continue;
           }
 
           const response = await API.startDownload(url);
           Spicetify.showNotification(
-            `Download started: ${response.download_id}`
+            t("notifications.downloadStarted", { id: response.download_id })
           );
         } catch (error) {
           console.error("Download error:", error);
           Spicetify.showNotification(
             error instanceof Error
               ? error.message
-              : "Failed to start download",
+              : t("notifications.downloadFailed"),
             true
           );
         }
@@ -60,26 +74,26 @@ async function main() {
 
   // Register context menu items for albums
   const albumDownloadItem = new Spicetify.ContextMenu.Item(
-    "Download Album with SpiceDL",
+    t("menu.downloadAlbum"),
     async (uris) => {
       for (const uri of uris) {
         try {
           const url = convertUriToUrl(uri);
           if (!url) {
-            Spicetify.showNotification("Invalid URI", true);
+            Spicetify.showNotification(t("notifications.invalidUri"), true);
             continue;
           }
 
           const response = await API.startDownload(url);
           Spicetify.showNotification(
-            `Album download started: ${response.download_id}`
+            t("notifications.albumDownloadStarted", { id: response.download_id })
           );
         } catch (error) {
           console.error("Download error:", error);
           Spicetify.showNotification(
             error instanceof Error
               ? error.message
-              : "Failed to start download",
+              : t("notifications.downloadFailed"),
             true
           );
         }
@@ -95,26 +109,26 @@ async function main() {
 
   // Register context menu items for playlists
   const playlistDownloadItem = new Spicetify.ContextMenu.Item(
-    "Download Playlist with SpiceDL",
+    t("menu.downloadPlaylist"),
     async (uris) => {
       for (const uri of uris) {
         try {
           const url = convertUriToUrl(uri);
           if (!url) {
-            Spicetify.showNotification("Invalid URI", true);
+            Spicetify.showNotification(t("notifications.invalidUri"), true);
             continue;
           }
 
           const response = await API.startDownload(url);
           Spicetify.showNotification(
-            `Playlist download started: ${response.download_id}`
+            t("notifications.playlistDownloadStarted", { id: response.download_id })
           );
         } catch (error) {
           console.error("Download error:", error);
           Spicetify.showNotification(
             error instanceof Error
               ? error.message
-              : "Failed to start download",
+              : t("notifications.downloadFailed"),
             true
           );
         }
@@ -130,7 +144,7 @@ async function main() {
 
   // Add menu item to show download status in popup modal
   const statusMenuItem = new Spicetify.Menu.Item(
-    "Download Status",
+    t("menu.downloadStatus"),
     false,
     () => {
       showDownloadStatusModal();
@@ -141,7 +155,7 @@ async function main() {
 
   // Add menu item to open extension settings
   const extensionSettingsMenuItem = new Spicetify.Menu.Item(
-    "SpiceDL Settings",
+    t("menu.settings"),
     false,
     () => {
       showExtensionSettingsModal();
@@ -164,7 +178,7 @@ async function main() {
 
     // Show in popup modal
     Spicetify.PopupModal.display({
-      title: "Download Status",
+      title: t("ui.title"),
       content: container,
       isLarge: true,
     });
@@ -215,7 +229,7 @@ async function main() {
 
     // Show in popup modal
     Spicetify.PopupModal.display({
-      title: "SpiceDL Extension Settings",
+      title: t("settings.title"),
       content: container,
       isLarge: false,
     });

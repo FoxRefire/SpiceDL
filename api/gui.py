@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QThread, Signal, QObject, QTimer, QMetaObject, QEvent
 from PySide6.QtGui import QFont, QIcon, QCloseEvent
 from config_manager import ConfigManager
+from i18n import get_i18n, t
 import threading
 import os
 from pathlib import Path
@@ -60,6 +61,16 @@ class SettingsGUI(QMainWindow):
         self.config_manager = config_manager
         self.on_config_changed = on_config_changed
         self.signal_obj = ConfigChangedSignal()
+        self.i18n = get_i18n()
+        
+        # Set language from config or detect from system
+        language = config_manager.get("language")
+        if language:
+            self.i18n.set_language(language)
+        else:
+            detected_lang = self.i18n.detect_language()
+            self.i18n.set_language(detected_lang)
+            config_manager.set("language", detected_lang)
         
         # Modern color scheme
         self.bg_color = "#1a1a1a"
@@ -74,7 +85,7 @@ class SettingsGUI(QMainWindow):
         self.input_focus = "#333333"
         self.error_color = "#e74c3c"
         
-        self.setWindowTitle("SpiceDL API Settings")
+        self.setWindowTitle(t("ui.title"))
         self.setMinimumSize(900, 700)
         self.resize(900, 700)
         
@@ -113,7 +124,7 @@ class SettingsGUI(QMainWindow):
         title_layout.setContentsMargins(0, 0, 0, 0)
         title_layout.setSpacing(8)
         
-        title_label = QLabel("SpiceDL API Settings")
+        title_label = QLabel(t("ui.title"))
         title_label.setStyleSheet(f"""
             color: {self.text_color};
             font-size: 28px;
@@ -123,7 +134,7 @@ class SettingsGUI(QMainWindow):
         """)
         title_layout.addWidget(title_label)
         
-        subtitle_label = QLabel("Configure your download settings and server preferences")
+        subtitle_label = QLabel(t("ui.subtitle"))
         subtitle_label.setStyleSheet(f"""
             color: {self.text_secondary};
             font-size: 13px;
@@ -171,7 +182,7 @@ class SettingsGUI(QMainWindow):
         download_layout.setContentsMargins(24, 24, 24, 24)
         download_layout.setSpacing(16)
         
-        section_title = QLabel("Download Settings")
+        section_title = QLabel(t("ui.download_settings"))
         section_title.setStyleSheet(f"""
             color: {self.text_color};
             font-size: 16px;
@@ -183,7 +194,7 @@ class SettingsGUI(QMainWindow):
         download_layout.addSpacing(4)
         
         # Download folder field
-        folder_label = QLabel("Download Folder")
+        folder_label = QLabel(t("ui.download_folder"))
         folder_label.setStyleSheet(f"""
             color: {self.text_color};
             font-size: 13px;
@@ -198,7 +209,7 @@ class SettingsGUI(QMainWindow):
         folder_input_layout.setSpacing(12)
         
         self.folder_var = QLineEdit()
-        self.folder_var.setPlaceholderText("Select a folder for downloads...")
+        self.folder_var.setPlaceholderText(t("ui.download_folder_placeholder"))
         self.folder_var.setStyleSheet(f"""
             QLineEdit {{
                 background-color: {self.input_bg};
@@ -220,7 +231,7 @@ class SettingsGUI(QMainWindow):
         """)
         folder_input_layout.addWidget(self.folder_var, 1)
         
-        browse_btn = QPushButton("Browse...")
+        browse_btn = QPushButton(t("ui.browse"))
         browse_btn.setMinimumWidth(100)
         browse_btn.setStyleSheet(f"""
             QPushButton {{
@@ -252,7 +263,7 @@ class SettingsGUI(QMainWindow):
         server_layout.setContentsMargins(24, 24, 24, 24)
         server_layout.setSpacing(16)
         
-        server_title = QLabel("Server Settings")
+        server_title = QLabel(t("ui.server_settings"))
         server_title.setStyleSheet(f"""
             color: {self.text_color};
             font-size: 16px;
@@ -264,7 +275,7 @@ class SettingsGUI(QMainWindow):
         server_layout.addSpacing(4)
         
         # Host field
-        host_label = QLabel("Host Address")
+        host_label = QLabel(t("ui.host_address"))
         host_label.setStyleSheet(f"""
             color: {self.text_color};
             font-size: 13px;
@@ -300,7 +311,7 @@ class SettingsGUI(QMainWindow):
         server_layout.addSpacing(16)
         
         # Port field
-        port_label = QLabel("Port Number")
+        port_label = QLabel(t("ui.port_number"))
         port_label.setStyleSheet(f"""
             color: {self.text_color};
             font-size: 13px;
@@ -346,7 +357,7 @@ class SettingsGUI(QMainWindow):
         button_layout.setSpacing(12)
         button_layout.addStretch()
         
-        cancel_btn = QPushButton("Cancel")
+        cancel_btn = QPushButton(t("ui.cancel"))
         cancel_btn.setMinimumWidth(120)
         cancel_btn.setStyleSheet(f"""
             QPushButton {{
@@ -369,7 +380,7 @@ class SettingsGUI(QMainWindow):
         cancel_btn.clicked.connect(self.close)
         button_layout.addWidget(cancel_btn)
         
-        save_btn = QPushButton("Save")
+        save_btn = QPushButton(t("ui.save"))
         save_btn.setMinimumWidth(120)
         save_btn.setDefault(True)
         save_btn.setStyleSheet(f"""
@@ -422,7 +433,7 @@ class SettingsGUI(QMainWindow):
         """Open folder browser dialog"""
         folder = QFileDialog.getExistingDirectory(
             self,
-            "Select Download Folder",
+            t("ui.select_download_folder"),
             self.folder_var.text() or str(Path.home())
         )
         if folder:
@@ -441,21 +452,21 @@ class SettingsGUI(QMainWindow):
             # Validate port
             port_text = self.port_var.text().strip()
             if not port_text:
-                raise ValueError("Port number is required")
+                raise ValueError(t("ui.port_required"))
             
             port = int(port_text)
             if port < 1 or port > 65535:
-                raise ValueError("Port must be between 1 and 65535")
+                raise ValueError(t("ui.port_range"))
             
             # Validate folder
             folder = self.folder_var.text().strip()
             if not folder:
-                raise ValueError("Download folder is required")
+                raise ValueError(t("ui.folder_required"))
             
             # Validate host
             host = self.host_var.text().strip()
             if not host:
-                raise ValueError("Host address is required")
+                raise ValueError(t("ui.host_required"))
             
             # Save settings
             self.config_manager.set("download_folder", folder)
@@ -464,8 +475,8 @@ class SettingsGUI(QMainWindow):
             
             msg = QMessageBox(self)
             msg.setIcon(QMessageBox.Information)
-            msg.setWindowTitle("Success")
-            msg.setText("Settings saved successfully!")
+            msg.setWindowTitle(t("ui.success"))
+            msg.setText(t("ui.settings_saved"))
             msg.setStyleSheet(f"""
                 QMessageBox {{
                     background-color: {self.bg_color};
@@ -499,8 +510,8 @@ class SettingsGUI(QMainWindow):
         except ValueError as e:
             msg = QMessageBox(self)
             msg.setIcon(QMessageBox.Critical)
-            msg.setWindowTitle("Error")
-            msg.setText(f"Invalid input: {str(e)}")
+            msg.setWindowTitle(t("ui.error"))
+            msg.setText(t("ui.invalid_input", message=str(e)))
             msg.setStyleSheet(f"""
                 QMessageBox {{
                     background-color: {self.bg_color};
@@ -527,8 +538,8 @@ class SettingsGUI(QMainWindow):
         except Exception as e:
             msg = QMessageBox(self)
             msg.setIcon(QMessageBox.Critical)
-            msg.setWindowTitle("Error")
-            msg.setText(f"Failed to save settings: {str(e)}")
+            msg.setWindowTitle(t("ui.error"))
+            msg.setText(t("ui.failed_to_save", message=str(e)))
             msg.setStyleSheet(f"""
                 QMessageBox {{
                     background-color: {self.bg_color};

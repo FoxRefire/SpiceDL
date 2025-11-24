@@ -2,6 +2,7 @@
  * Download status page component
  */
 import * as API from "../api";
+import { t } from "../i18n";
 
 const { React } = Spicetify;
 const { useState, useEffect, useMemo, useRef, useCallback } = React;
@@ -370,7 +371,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
 
       if (!isHealthy) {
         if (!isMountedRef.current) return;
-        setError("Cannot connect to API server. Please check if the server is running.");
+        setError(t("notifications.apiUnavailable"));
         setLoading(false);
         return;
       }
@@ -452,7 +453,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
       if (!isMountedRef.current) {
         return;
       }
-      setError(err instanceof Error ? err.message : "Failed to fetch status");
+      setError(err instanceof Error ? err.message : t("ui.error"));
       console.error("Error fetching status:", err);
     } finally {
       // Only update loading state if component is still mounted
@@ -515,10 +516,10 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
     try {
       await API.cancelDownload(downloadId);
       await fetchStatus();
-      Spicetify.showNotification("Download cancelled");
+      Spicetify.showNotification(t("notifications.downloadCancelled"));
     } catch (err) {
       Spicetify.showNotification(
-        err instanceof Error ? err.message : "Failed to cancel",
+        err instanceof Error ? err.message : t("notifications.cancelFailed"),
         true
       );
     }
@@ -542,15 +543,15 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
   const getStatusText = (status: string) => {
     switch (status) {
       case "starting":
-        return "Starting";
+        return t("ui.starting");
       case "downloading":
-        return "Downloading";
+        return t("ui.downloading");
       case "completed":
-        return "Completed";
+        return t("ui.completedStatus");
       case "failed":
-        return "Failed";
+        return t("ui.failedStatus");
       case "cancelled":
-        return "Cancelled";
+        return t("ui.cancelledStatus");
       default:
         return status;
     }
@@ -648,7 +649,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
           color: "var(--spice-text-subdued)",
         }}
       >
-        Loading...
+        {t("ui.loading")}
       </div>
     );
   }
@@ -661,7 +662,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
           color: "var(--spice-text-negative)",
         }}
       >
-        <h2>Error</h2>
+        <h2>{t("ui.error")}</h2>
         <p>{error}</p>
         <button
           onClick={fetchStatus}
@@ -675,7 +676,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
             cursor: "pointer",
           }}
         >
-          Retry
+          {t("ui.retry")}
         </button>
       </div>
     );
@@ -703,7 +704,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
       >
         <div>
           <h1 style={{ margin: 0, fontSize: "24px", fontWeight: "bold" }}>
-            Download Status
+            {t("ui.title")}
           </h1>
           <p
             style={{
@@ -712,7 +713,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
               color: "var(--spice-text-subdued)",
             }}
           >
-            {stats.total} downloads
+            {t("ui.downloads", { count: stats.total })}
           </p>
         </div>
         <div
@@ -726,10 +727,10 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
             onClick={async () => {
               try {
                 await API.openDownloadFolder();
-                Spicetify.showNotification("Download folder opened");
+                Spicetify.showNotification(t("notifications.folderOpened"));
               } catch (error) {
                 Spicetify.showNotification(
-                  error instanceof Error ? error.message : "Failed to open folder",
+                  error instanceof Error ? error.message : t("notifications.openFolderFailed"),
                   true
                 );
               }
@@ -752,7 +753,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
               e.currentTarget.style.opacity = "1";
             }}
           >
-            📁 Open Download Folder
+            {t("ui.openFolder")}
           </button>
           <button
             onClick={fetchStatus}
@@ -774,7 +775,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
               e.currentTarget.style.opacity = "1";
             }}
           >
-            ⟳ Refresh
+            {t("ui.refresh")}
           </button>
         </div>
       </div>
@@ -798,7 +799,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
             }}
           >
             <div style={{ fontSize: "24px", fontWeight: "bold" }}>{stats.total}</div>
-            <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>Total</div>
+            <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>{t("ui.total")}</div>
           </div>
           <div
             style={{
@@ -817,7 +818,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
             >
               {stats.active}
             </div>
-            <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>Active</div>
+            <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>{t("ui.active")}</div>
           </div>
           <div
             style={{
@@ -836,7 +837,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
             >
               {stats.completed}
             </div>
-            <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>Completed</div>
+            <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>{t("ui.completed")}</div>
           </div>
           <div
             style={{
@@ -855,7 +856,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
             >
               {stats.failed}
             </div>
-            <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>Failed</div>
+            <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>{t("ui.failed")}</div>
           </div>
           <div
             style={{
@@ -874,7 +875,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
             >
               {stats.cancelled}
             </div>
-            <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>Cancelled</div>
+            <div style={{ fontSize: "12px", color: "var(--spice-text-subdued)" }}>{t("ui.cancelled")}</div>
           </div>
         </div>
       )}
@@ -890,11 +891,11 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
           }}
         >
           {[
-            { key: "all", label: "All" },
-            { key: "active", label: "Active" },
-            { key: "completed", label: "Completed" },
-            { key: "failed", label: "Failed" },
-            { key: "cancelled", label: "Cancelled" },
+            { key: "all", label: t("ui.all") },
+            { key: "active", label: t("ui.active") },
+            { key: "completed", label: t("ui.completed") },
+            { key: "failed", label: t("ui.failed") },
+            { key: "cancelled", label: t("ui.cancelled") },
           ].map((f) => (
             <button
               key={f.key}
@@ -940,12 +941,12 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
           <div style={{ fontSize: "48px", marginBottom: "16px" }}>📥</div>
           <div style={{ fontSize: "16px", marginBottom: "8px" }}>
             {downloads.length === 0
-              ? "No downloads"
-              : "No downloads match this filter"}
+              ? t("ui.noDownloads")
+              : t("ui.noDownloadsFilter")}
           </div>
           {downloads.length === 0 && (
             <div style={{ fontSize: "14px" }}>
-              Right-click on tracks or albums to start downloading
+              {t("ui.startDownloading")}
             </div>
           )}
         </div>
@@ -1185,7 +1186,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
                           marginBottom: "4px",
                         }}
                       >
-                        Error Details
+                        {t("ui.errorDetails")}
                       </summary>
                       <div
                         style={{
@@ -1227,7 +1228,7 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
                           e.currentTarget.style.opacity = "1";
                         }}
                       >
-                        ⊘ Cancel
+                        {t("ui.cancel")}
                       </button>
                     )}
                   </div>
@@ -1267,11 +1268,11 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
                     }}
                   >
                     <span>
-                      <strong>Started:</strong> {new Date(download.started_at).toLocaleString()}
+                      <strong>{t("ui.started")}</strong> {new Date(download.started_at).toLocaleString()}
                     </span>
                     {download.completed_at && (
                       <span>
-                        <strong>Completed:</strong> {new Date(download.completed_at).toLocaleString()}
+                        <strong>{t("ui.completedTime")}</strong> {new Date(download.completed_at).toLocaleString()}
                       </span>
                     )}
                   </div>

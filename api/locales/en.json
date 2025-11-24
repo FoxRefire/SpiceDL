@@ -1,0 +1,33 @@
+{
+  "ui": {
+    "title": "SpiceDL API Settings",
+    "subtitle": "Configure your download settings and server preferences",
+    "download_settings": "Download Settings",
+    "download_folder": "Download Folder",
+    "download_folder_placeholder": "Select a folder for downloads...",
+    "browse": "Browse...",
+    "server_settings": "Server Settings",
+    "host_address": "Host Address",
+    "port_number": "Port Number",
+    "cancel": "Cancel",
+    "save": "Save",
+    "select_download_folder": "Select Download Folder",
+    "success": "Success",
+    "settings_saved": "Settings saved successfully!",
+    "error": "Error",
+    "invalid_input": "Invalid input: {message}",
+    "failed_to_save": "Failed to save settings: {message}",
+    "port_required": "Port number is required",
+    "port_range": "Port must be between 1 and 65535",
+    "folder_required": "Download folder is required",
+    "host_required": "Host address is required"
+  },
+  "tray": {
+    "tooltip": "SpiceDL API Server",
+    "settings": "Settings",
+    "status": "Status",
+    "quit": "Quit",
+    "active_downloads": "Active downloads: {count}"
+  }
+}
+

@@ -15,7 +15,8 @@ class ConfigManager:
         self.default_config = {
             "download_folder": str(Path.home() / "Music" / "SpiceDL"),
             "port": 5985,
-            "host": "127.0.0.1"
+            "host": "127.0.0.1",
+            "language": None  # None means auto-detect
         }
         self.config = self.load_config()
     

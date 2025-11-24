@@ -6,11 +6,13 @@ const CONFIG_KEY = "spicedl_config";
 const DEFAULT_CONFIG = {
   apiPort: 5985,
   apiHost: "127.0.0.1",
+  language: undefined as string | undefined, // undefined means auto-detect
 };
 
 export interface ExtensionConfig {
   apiPort: number;
   apiHost: string;
+  language?: string;
 }
 
 /**

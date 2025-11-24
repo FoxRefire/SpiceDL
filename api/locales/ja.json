@@ -1,0 +1,33 @@
+{
+  "ui": {
+    "title": "SpiceDL API設定",
+    "subtitle": "ダウンロード設定とサーバー設定を構成します",
+    "download_settings": "ダウンロード設定",
+    "download_folder": "ダウンロードフォルダ",
+    "download_folder_placeholder": "ダウンロード用のフォルダを選択...",
+    "browse": "参照...",
+    "server_settings": "サーバー設定",
+    "host_address": "ホストアドレス",
+    "port_number": "ポート番号",
+    "cancel": "キャンセル",
+    "save": "保存",
+    "select_download_folder": "ダウンロードフォルダを選択",
+    "success": "成功",
+    "settings_saved": "設定が正常に保存されました！",
+    "error": "エラー",
+    "invalid_input": "無効な入力: {message}",
+    "failed_to_save": "設定の保存に失敗しました: {message}",
+    "port_required": "ポート番号が必要です",
+    "port_range": "ポートは1から65535の間である必要があります",
+    "folder_required": "ダウンロードフォルダが必要です",
+    "host_required": "ホストアドレスが必要です"
+  },
+  "tray": {
+    "tooltip": "SpiceDL APIサーバー",
+    "settings": "設定",
+    "status": "ステータス",
+    "quit": "終了",
+    "active_downloads": "アクティブなダウンロード: {count}"
+  }
+}
+

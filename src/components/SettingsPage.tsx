@@ -3,6 +3,7 @@
  */
 import * as Config from "../config";
 import * as API from "../api";
+import { t } from "../i18n";
 
 const { React } = Spicetify;
 const { useState, useEffect } = React;
@@ -28,12 +29,12 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
     try {
       const port = parseInt(apiPort, 10);
       if (isNaN(port) || port < 1 || port > 65535) {
-        setError("Port number must be between 1 and 65535");
+        setError(t("settings.portRange"));
         return;
       }
 
       if (!apiHost || apiHost.trim() === "") {
-        setError("Please enter a host name");
+        setError(t("settings.hostRequired"));
         return;
       }
 
@@ -45,9 +46,9 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
       setError(null);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-      Spicetify.showNotification("Settings saved");
+      Spicetify.showNotification(t("notifications.settingsSaved"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save settings");
+      setError(err instanceof Error ? err.message : t("settings.saveFailed"));
     }
   };
 
@@ -58,19 +59,19 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
     setApiHost(defaultConfig.apiHost);
     setError(null);
     setSaved(false);
-    Spicetify.showNotification("Settings reset");
+    Spicetify.showNotification(t("notifications.settingsReset"));
   };
 
   const handleOpenApiServerSettings = async () => {
     try {
       await API.openSettings();
-      Spicetify.showNotification("API server settings window opened");
+      Spicetify.showNotification(t("notifications.apiSettingsOpened"));
     } catch (error) {
       console.error("Error opening API server settings:", error);
       Spicetify.showNotification(
         error instanceof Error
           ? error.message
-          : "Failed to open API server settings window",
+          : t("notifications.apiSettingsFailed"),
         true
       );
     }
@@ -84,7 +85,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
         overflowY: "auto",
       }}
     >
-      <h1 style={{ marginTop: 0 }}>SpiceDL Extension Settings</h1>
+      <h1 style={{ marginTop: 0 }}>{t("settings.title")}</h1>
 
       <div
         style={{
@@ -103,7 +104,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
               fontWeight: "bold",
             }}
           >
-            API Server Host
+            {t("settings.apiHost")}
           </label>
           <input
             type="text"
@@ -131,7 +132,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
               fontWeight: "bold",
             }}
           >
-            API Server Port
+            {t("settings.apiPort")}
           </label>
           <input
             type="number"
@@ -176,7 +177,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
               fontSize: "14px",
             }}
           >
-            Settings saved
+            {t("notifications.settingsSaved")}
           </div>
         )}
 
@@ -199,7 +200,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
               fontWeight: "bold",
             }}
           >
-            Save
+            {t("settings.save")}
           </button>
           <button
             onClick={handleReset}
@@ -213,7 +214,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
               fontSize: "14px",
             }}
           >
-            Reset
+            {t("settings.reset")}
           </button>
         </div>
 
@@ -234,7 +235,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
               color: "var(--spice-text)",
             }}
           >
-            API Server Settings
+            {t("settings.apiServerSettings")}
           </h3>
           <p
             style={{
@@ -243,7 +244,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
               color: "var(--spice-text-subdued)",
             }}
           >
-            To change API server settings such as download folder and port, click the button below.
+            {t("settings.apiServerSettingsDesc")}
           </p>
           <button
             onClick={handleOpenApiServerSettings}
@@ -259,7 +260,7 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
               width: "100%",
             }}
           >
-            Open API Server Settings
+            {t("settings.openApiServerSettings")}
           </button>
         </div>
 
@@ -273,14 +274,14 @@ const SettingsPage: React.FC<SettingsPageProps> = () => {
             color: "var(--spice-text-subdued)",
           }}
         >
-          <strong>Current Settings:</strong>
+          <strong>{t("settings.currentSettings")}</strong>
           <br />
-          Host: {apiHost}
+          {t("settings.apiHost")}: {apiHost}
           <br />
-          Port: {apiPort}
+          {t("settings.apiPort")}: {apiPort}
           <br />
           <br />
-          API URL: http://{apiHost}:{apiPort}
+          {t("settings.apiUrl")} http://{apiHost}:{apiPort}
         </div>
       </div>
     </div>

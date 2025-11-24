@@ -4,6 +4,7 @@ System tray application using PySide6
 from PySide6.QtWidgets import QSystemTrayIcon, QMenu, QApplication, QMessageBox
 from PySide6.QtGui import QIcon, QPixmap, QPainter, QColor
 from PySide6.QtCore import QObject, Signal, Qt
+from i18n import get_i18n, t
 import threading
 import sys
 import os
@@ -21,6 +22,16 @@ class TrayApp(QObject):
         self.gui_module = gui_module
         self.tray_icon = None
         self.running = True
+        self.i18n = get_i18n()
+        
+        # Set language from config or detect from system
+        language = config_manager.get("language")
+        if language:
+            self.i18n.set_language(language)
+        else:
+            detected_lang = self.i18n.detect_language()
+            self.i18n.set_language(detected_lang)
+            config_manager.set("language", detected_lang)
     
     def create_icon_image(self):
         """Create a simple icon image"""
@@ -74,7 +85,8 @@ class TrayApp(QObject):
         """Show download status"""
         status = self.download_manager.get_status()
         # Could open a status window here, for now just print
-        print(f"Active downloads: {status.get('total', 0)}")
+        count = status.get('total', 0)
+        print(t("tray.active_downloads", count=count))
     
     def quit_app(self):
         """Quit the application"""
@@ -90,15 +102,15 @@ class TrayApp(QObject):
         """Create the system tray menu"""
         menu = QMenu()
         
-        settings_action = menu.addAction("Settings")
+        settings_action = menu.addAction(t("tray.settings"))
         settings_action.triggered.connect(self.show_settings)
         
-        status_action = menu.addAction("Status")
+        status_action = menu.addAction(t("tray.status"))
         status_action.triggered.connect(self.show_status)
         
         menu.addSeparator()
         
-        quit_action = menu.addAction("Quit")
+        quit_action = menu.addAction(t("tray.quit"))
         quit_action.triggered.connect(self.quit_app)
         
         return menu
@@ -122,7 +134,7 @@ class TrayApp(QObject):
         try:
             icon = self.create_icon_image()
             self.tray_icon = QSystemTrayIcon(icon, app)
-            self.tray_icon.setToolTip("SpiceDL API Server")
+            self.tray_icon.setToolTip(t("tray.tooltip"))
             
             # Set menu
             menu = self.create_menu()
