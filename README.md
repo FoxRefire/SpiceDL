@@ -4,6 +4,28 @@
   <div align="center">Spicetify extension that downloads music using SpotDL</div>
 </p>
 
+## Installation
+
+### 1. Install extension
+Install SpiceDL from Spicetify marketplace or [releases](https://github.com/FoxRefire/SpiceDL/releases/download/1.0/spicedl.js)
+
+### 2. Install backend API
+* [Windows](https://github.com/FoxRefire/SpiceDL/releases/download/1.0/api-windows.exe)
+* [Mac](https://github.com/FoxRefire/SpiceDL/releases/download/1.0/api-mac.zip)
+* [Python(Linux/Windows/Mac)](https://github.com/FoxRefire/SpiceDL/releases/download/1.0/api-python-multiplatform.zip)
+
+You can execute python backend by running following commands
+```bash
+cd api-python-multiplatform
+pip install -r requirements.txt
+pip install spotdl
+python app.py
+```
+
+Or click standalone prebuilt package for your platform.
+
+The API server will start and show a system tray icon. Right-click the icon to access settings.
+
 ## Features
 
 ### Spicetify Extension
@@ -20,62 +42,7 @@
 - 🖥️ GUI settings window (download folder, port settings, etc.)
 - 🔔 System tray icon (multi-platform support: Windows, macOS, Linux)
 
-## Prerequisites
-
-- [Spicetify](https://spicetify.app/) installed and configured
-- Python 3.7+ (for API server)
-- Node.js and npm (for building the extension)
-- [spotDL](https://spotdl.readthedocs.io/) (will be installed automatically)
-
-## Installation
-
-### Method 1: Install via Spicetify Marketplace (Recommended)
-
-1. Open Spicetify Marketplace
-2. Search for "SpiceDL"
-3. Click "Install"
-
-### Method 2: Manual Installation
-
-#### 1. API Server Setup
-
-See [api/README.md](./api/README.md) for detailed setup instructions.
-
-```bash
-cd api
-pip install -r requirements.txt
-pip install spotdl
-python app.py
-```
-
-The API server will start and show a system tray icon. Right-click the icon to access settings.
-
-#### 2. Install Spicetify Extension
-
-```bash
-# Clone the repository
-git clone https://github.com/FoxRefire/SpiceDL.git
-cd SpiceDL
-
-# Install dependencies
-npm install
-
-# Build the extension
-npm run build
-
-# Apply to Spicetify
-spicetify apply
-```
-
 ## Usage
-
-### Starting the API Server
-
-1. Run `python app.py` in the `api` directory
-2. An icon will appear in the system tray
-3. Right-click the icon and select "Settings" to change settings (download folder, port, etc.)
-
-**Note:** The API server must be running for the extension to work.
 
 ### Using the Spicetify Extension
 
@@ -95,38 +62,11 @@ spicetify apply
    - Select "SpiceDL Settings"
    - Configure API server host and port (default: `127.0.0.1:5985`)
 
-## Documentation
-
-- [API Documentation](./api/API_DOCUMENTATION.md) - Detailed API usage
-- [API README](./api/README.md) - API server setup and usage
-
-## Tech Stack
-
-- **Spicetify Creator** - Spicetify extension development
-- **TypeScript/React** - Extension UI
-- **Python/Flask** - REST API server
-- **spotDL** - Music download from Spotify
-- **pystray** - System tray icon
-- **PySide6** - Settings GUI
-
-## Development
-
-### Extension Development
-
-```bash
-npm run watch  # Watch for file changes and auto-build
-```
-
-### API Server Development
-
-```bash
-cd api
-python main.py  # Start in development mode (no GUI)
-```
-
 ## Screenshots
+<img width="256" src="https://github.com/user-attachments/assets/d0a6e21a-99fa-4074-b8e2-2359327d74bb" />
+<img width="256" src="https://github.com/user-attachments/assets/12fe2682-fe9b-467a-b400-987ed276bad0" />
+<img width="256" src="https://github.com/user-attachments/assets/aa1c16c7-2e5b-4e8b-ba76-9d3a47b52435" />
 
-_Add screenshots of the extension in action here_
 
 ## Troubleshooting
 
@@ -148,7 +88,3 @@ _Add screenshots of the extension in action here_
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-MIT License - see [LICENSE](./LICENSE) file for details
