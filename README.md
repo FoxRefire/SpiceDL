@@ -1,6 +1,8 @@
-# SpiceDL
-
-Spicetify extension and API server for downloading music from Spotify
+<p align="center">
+  <img width="180" src="https://github.com/user-attachments/assets/117928ee-70e7-46fb-8df9-87f59aa377f6">
+  <h1 align="center">SpiceDL</h1>
+  <div align="center">Spicetify extension that downloads music using SpotDL</div>
+</p>
 
 ## Features
 
