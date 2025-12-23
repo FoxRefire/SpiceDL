@@ -111,10 +111,6 @@ jobs:
   build-windows-exe:
     name: Build EXE (Windows)
     runs-on: windows-latest
-    env:
-      # Ensure pip and Nuitka use stable, cacheable locations on Windows
-      PIP_CACHE_DIR: ${{ env.USERPROFILE }}\AppData\Local\pip\Cache
-      NUITKA_CACHE_DIR: ${{ env.USERPROFILE }}\AppData\Local\Nuitka\Cache
     steps:
       - uses: actions/checkout@v4
       
@@ -129,7 +125,7 @@ jobs:
       - name: Cache pip downloads (Windows)
         uses: actions/cache@v4
         with:
-          path: ${{ env.PIP_CACHE_DIR }}
+          path: ${{ runner.temp }}\pip-cache
           key: ${{ runner.os }}-pip-${{ hashFiles('api/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
@@ -138,8 +134,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ${{ env.NUITKA_CACHE_DIR }}
-            ${{ runner.temp }}/Nuitka
+            ${{ runner.temp }}\nuitka-cache
+            ${{ runner.temp }}\Nuitka
           key: ${{ runner.os }}-nuitka-${{ hashFiles('api/**/*.py', 'api/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-nuitka-
