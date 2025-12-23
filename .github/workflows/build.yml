@@ -59,6 +59,7 @@ jobs:
         with:
           name: deb-package
           path: api/build/fpm/*.deb
+          compression-level: 0
 
   build-linux-rpm:
     name: Build RPM Package (Linux)
@@ -107,6 +108,7 @@ jobs:
         with:
           name: rpm-package
           path: api/build/fpm/*.rpm
+          compression-level: 0
 
   build-windows-exe:
     name: Build EXE (Windows)
@@ -157,6 +159,7 @@ jobs:
         with:
           name: exe-package
           path: api/build/nuitka/dist/*.exe
+          compression-level: 0
 
   build-macos-app:
     name: Build App Bundle (macOS)
@@ -188,6 +191,7 @@ jobs:
         with:
           name: app-package
           path: api/build/py2app/dist/*.app
+          compression-level: 0
 
   build-python-zip:
     name: Build Python Scripts ZIP
@@ -233,6 +237,7 @@ jobs:
         with:
           name: python-scripts-zip
           path: zip_build/spicedl2-api-scripts-${{ steps.version.outputs.version }}.zip
+          compression-level: 0
           if-no-files-found: error
           retention-days: 1
 
@@ -287,6 +292,7 @@ jobs:
         with:
           name: spicetify-extension
           path: spicedl2-extension-${{ steps.version.outputs.version }}.zip
+          compression-level: 0
           if-no-files-found: error
           retention-days: 1
 
@@ -316,38 +322,31 @@ jobs:
           # Flatten artifact structure to avoid nested directories
           mkdir -p release_files
           
-          # Copy DEB files
-          if [ -d "artifacts/deb-package" ]; then
-            cp artifacts/deb-package/*.deb release_files/ 2>/dev/null || true
-          fi
+          # Debug: List artifact structure
+          echo "Artifact structure:"
+          find artifacts -type f -o -type d | head -20
           
-          # Copy RPM files
-          if [ -d "artifacts/rpm-package" ]; then
-            cp artifacts/rpm-package/*.rpm release_files/ 2>/dev/null || true
-          fi
+          # Copy DEB files (find and copy directly, not from nested ZIP)
+          find artifacts -name "*.deb" -type f -exec cp {} release_files/ \;
           
-          # Copy EXE files
-          if [ -d "artifacts/exe-package" ]; then
-            cp artifacts/exe-package/*.exe release_files/ 2>/dev/null || true
-          fi
+          # Copy RPM files (find and copy directly, not from nested ZIP)
+          find artifacts -name "*.rpm" -type f -exec cp {} release_files/ \;
           
-          # Copy APP bundles
-          if [ -d "artifacts/app-package" ]; then
-            cp -r artifacts/app-package/*.app release_files/ 2>/dev/null || true
-          fi
+          # Copy EXE files (find and copy directly, not from nested ZIP)
+          find artifacts -name "*.exe" -type f -exec cp {} release_files/ \;
+          
+          # Copy APP bundles (find and copy directly, not from nested ZIP)
+          find artifacts -name "*.app" -type d -exec cp -r {} release_files/ \;
           
           # Copy ZIP files directly (already zipped, don't re-zip)
-          if [ -d "artifacts/python-scripts-zip" ]; then
-            cp artifacts/python-scripts-zip/*.zip release_files/ 2>/dev/null || true
-          fi
-          
-          if [ -d "artifacts/spicetify-extension" ]; then
-            cp artifacts/spicetify-extension/*.zip release_files/ 2>/dev/null || true
-          fi
+          find artifacts -name "*.zip" -type f -exec cp {} release_files/ \;
           
           # List files for verification
           echo "Release files prepared:"
           ls -lh release_files/
+          echo ""
+          echo "File types in release_files:"
+          file release_files/* || true
       
       - name: Create Release
         uses: softprops/action-gh-release@v1
