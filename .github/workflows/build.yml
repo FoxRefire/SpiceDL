@@ -111,6 +111,10 @@ jobs:
   build-windows-exe:
     name: Build EXE (Windows)
     runs-on: windows-latest
+    env:
+      # Ensure pip and Nuitka use stable, cacheable locations on Windows
+      PIP_CACHE_DIR: ${{ env.USERPROFILE }}\AppData\Local\pip\Cache
+      NUITKA_CACHE_DIR: ${{ env.USERPROFILE }}\AppData\Local\Nuitka\Cache
     steps:
       - uses: actions/checkout@v4
       
@@ -121,12 +125,20 @@ jobs:
           cache: 'pip'
           cache-dependency-path: |
             api/requirements.txt
-      
+
+      - name: Cache pip downloads (Windows)
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PIP_CACHE_DIR }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('api/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Cache Nuitka build artifacts
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/Nuitka
+            ${{ env.NUITKA_CACHE_DIR }}
             ${{ runner.temp }}/Nuitka
           key: ${{ runner.os }}-nuitka-${{ hashFiles('api/**/*.py', 'api/requirements.txt') }}
           restore-keys: |
@@ -136,7 +148,7 @@ jobs:
         working-directory: ./api
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install --prefer-binary -r requirements.txt
           pip install nuitka
       
       - name: Build EXE with Nuitka
@@ -225,6 +237,8 @@ jobs:
         with:
           name: python-scripts-zip
           path: zip_build/spicedl2-api-scripts-${{ steps.version.outputs.version }}.zip
+          if-no-files-found: error
+          retention-days: 1
 
   build-spicetify-extension:
     name: Build Spicetify Extension
@@ -277,6 +291,8 @@ jobs:
         with:
           name: spicetify-extension
           path: spicedl2-extension-${{ steps.version.outputs.version }}.zip
+          if-no-files-found: error
+          retention-days: 1
 
   create-release:
     name: Create Release
@@ -297,17 +313,50 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+          merge-multiple: false
+      
+      - name: Prepare release files
+        run: |
+          # Flatten artifact structure to avoid nested directories
+          mkdir -p release_files
+          
+          # Copy DEB files
+          if [ -d "artifacts/deb-package" ]; then
+            cp artifacts/deb-package/*.deb release_files/ 2>/dev/null || true
+          fi
+          
+          # Copy RPM files
+          if [ -d "artifacts/rpm-package" ]; then
+            cp artifacts/rpm-package/*.rpm release_files/ 2>/dev/null || true
+          fi
+          
+          # Copy EXE files
+          if [ -d "artifacts/exe-package" ]; then
+            cp artifacts/exe-package/*.exe release_files/ 2>/dev/null || true
+          fi
+          
+          # Copy APP bundles
+          if [ -d "artifacts/app-package" ]; then
+            cp -r artifacts/app-package/*.app release_files/ 2>/dev/null || true
+          fi
+          
+          # Copy ZIP files directly (already zipped, don't re-zip)
+          if [ -d "artifacts/python-scripts-zip" ]; then
+            cp artifacts/python-scripts-zip/*.zip release_files/ 2>/dev/null || true
+          fi
+          
+          if [ -d "artifacts/spicetify-extension" ]; then
+            cp artifacts/spicetify-extension/*.zip release_files/ 2>/dev/null || true
+          fi
+          
+          # List files for verification
+          echo "Release files prepared:"
+          ls -lh release_files/
       
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            artifacts/deb-package/*.deb
-            artifacts/rpm-package/*.rpm
-            artifacts/exe-package/*.exe
-            artifacts/app-package/*.app
-            artifacts/python-scripts-zip/*.zip
-            artifacts/spicetify-extension/*.zip
+          files: release_files/*
           tag_name: ${{ github.ref_name }}
           name: Release ${{ steps.version.outputs.version }}
           body: |
