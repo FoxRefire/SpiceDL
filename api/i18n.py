@@ -4,6 +4,7 @@ Internationalization (i18n) support for the API GUI
 import json
 import locale
 import os
+import sys
 from pathlib import Path
 from typing import Dict, Any, Optional
 
@@ -19,8 +20,16 @@ class I18n:
             locale_dir: Directory containing locale files (default: locales/ in same directory as this file)
         """
         if locale_dir is None:
-            # Default to locales/ directory in the same directory as this file
-            self.locale_dir = Path(__file__).parent / "locales"
+            # For Nuitka builds, check sys._MEIPASS (temporary extraction directory)
+            # For regular Python execution, use __file__ location
+            if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+                # Nuitka onefile mode: files are extracted to _MEIPASS
+                base_dir = Path(sys._MEIPASS)
+            else:
+                # Regular Python execution: use __file__ location
+                base_dir = Path(__file__).parent
+            
+            self.locale_dir = base_dir / "locales"
         else:
             self.locale_dir = Path(locale_dir)
         

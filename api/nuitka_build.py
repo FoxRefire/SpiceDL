@@ -73,6 +73,11 @@ def build_exe():
     if config_file.exists():
         cmd.extend([f"--include-data-file={config_file}={config_file.name}"])
     
+    # Add locales directory for i18n support
+    locales_dir = script_dir / "locales"
+    if locales_dir.exists():
+        cmd.extend([f"--include-data-dir={locales_dir}=locales"])
+    
     print(f"Building EXE with command: {' '.join(cmd)}")
     subprocess.check_call(cmd, cwd=str(script_dir))
     
