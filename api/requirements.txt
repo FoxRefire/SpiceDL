@@ -2,5 +2,5 @@ flask==3.0.0
 flask-cors==4.0.0
 PySide6>=6.5.0
 git+https://github.com/spotDL/spotify-downloader.git
-
+gunicorn
 
