@@ -12,7 +12,7 @@ import time
 IS_RENDER = os.environ.get("RENDER") == "true"
 
 # Import server components
-from main import app, run_server, config_manager, download_manager
+from main import app, config_manager, download_manager
 
 # GUI imports ONLY for desktop mode
 if not IS_RENDER:
@@ -28,6 +28,18 @@ else:
     TRAY_AVAILABLE = False
 
 
+# Override run_server to guarantee correct port binding
+def run_server():
+    """Start Flask server with Render-compliant host/port"""
+    port = int(os.environ.get("PORT", 10000))
+    app.run(
+        host="0.0.0.0",    # MUST bind to 0.0.0.0 for Render
+        port=port,         # MUST use Render's assigned PORT
+        debug=False,
+        use_reloader=False
+    )
+
+
 class Application:
     """Main application class"""
 
@@ -38,10 +50,8 @@ class Application:
 
     def start_server_threaded(self):
         """Desktop mode: start Flask in background thread"""
-
         def run():
             run_server()
-
         self.server_thread = threading.Thread(target=run, daemon=True)
         self.server_thread.start()
         print("Server thread started")
@@ -86,9 +96,6 @@ class Application:
         # ==========================
         if IS_RENDER:
             print("Render environment detected — running API-only mode")
-
-            # IMPORTANT:
-            # Flask MUST run in main thread on Render
             run_server()
             return
 
@@ -96,7 +103,6 @@ class Application:
         # DESKTOP MODE
         # ==========================
         print("Desktop environment detected")
-
         self.start_server_threaded()
 
         if TRAY_AVAILABLE:
