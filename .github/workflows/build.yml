@@ -311,111 +311,127 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
       
-      - name: Download DEB artifact
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          name: deb-package
-          path: artifacts/deb
-      
-      - name: Download RPM artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: rpm-package
-          path: artifacts/rpm
-      
-      - name: Download EXE artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: exe-package
-          path: artifacts/exe
-      
-      - name: Download App artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: app-package
-          path: artifacts/app
-      
-      - name: Download Python ZIP artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: python-scripts-zip
-          path: artifacts/python-zip
-      
-      - name: Download Extension artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: spicetify-extension
-          path: artifacts/extension
+          path: artifacts
+          merge-multiple: false
       
       - name: Prepare release files
         run: |
-          # Create release files directory
+          # Flatten artifact structure to avoid nested directories
           mkdir -p release_files
+          mkdir -p temp_extract
           
           # Debug: List artifact structure
           echo "=== Artifact structure ==="
-          find artifacts -type f -o -type d | sort
+          find artifacts -type f | sort
           echo ""
           
-          # Function to extract files from artifact directory (handles both flat and nested structures)
-          extract_files() {
-            local src_dir="$1"
-            local pattern="$2"
-            local dest_dir="$3"
-            
-            if [ ! -d "$src_dir" ]; then
-              echo "Warning: $src_dir does not exist"
-              return
+          # Extract DEB files from artifact ZIP
+          if [ -d "artifacts/deb-package" ]; then
+            # Find and extract the artifact ZIP file
+            find artifacts/deb-package -name "*.zip" -type f | while read zipfile; do
+              echo "Extracting DEB from: $zipfile"
+              unzip -q "$zipfile" -d temp_extract/deb-package || true
+            done
+            # Copy extracted DEB files
+            if [ -d "temp_extract/deb-package" ]; then
+              find temp_extract/deb-package -name "*.deb" -type f -exec cp {} release_files/ \;
             fi
-            
-            # First, try to find files directly in the directory
-            local found=$(find "$src_dir" -name "$pattern" -type f | head -1)
-            if [ -n "$found" ]; then
-              echo "Found $pattern in $src_dir: $found"
-              cp "$found" "$dest_dir/" 2>/dev/null || true
-            else
-              # If not found, list what's actually in the directory
-              echo "Files in $src_dir:"
-              ls -la "$src_dir" || true
-              # Try to find in subdirectories
-              find "$src_dir" -type f | head -5
-            fi
-          }
-          
-          # Extract DEB files
-          echo "=== Extracting DEB files ==="
-          extract_files "artifacts/deb" "*.deb" "release_files"
-          
-          # Extract RPM files
-          echo "=== Extracting RPM files ==="
-          extract_files "artifacts/rpm" "*.rpm" "release_files"
-          
-          # Extract EXE files
-          echo "=== Extracting EXE files ==="
-          extract_files "artifacts/exe" "*.exe" "release_files"
-          
-          # Extract APP bundles
-          echo "=== Extracting APP bundles ==="
-          if [ -d "artifacts/app" ]; then
-            find artifacts/app -name "*.app" -type d -exec cp -r {} release_files/ \;
+            # Also check if DEB files are directly in the directory (fallback)
+            find artifacts/deb-package -name "*.deb" -type f -exec cp {} release_files/ \;
           fi
           
-          # Extract ZIP files
-          echo "=== Extracting ZIP files ==="
-          extract_files "artifacts/python-zip" "*.zip" "release_files"
-          extract_files "artifacts/extension" "*.zip" "release_files"
+          # Extract RPM files from artifact ZIP
+          if [ -d "artifacts/rpm-package" ]; then
+            # Find and extract the artifact ZIP file
+            find artifacts/rpm-package -name "*.zip" -type f | while read zipfile; do
+              echo "Extracting RPM from: $zipfile"
+              unzip -q "$zipfile" -d temp_extract/rpm-package || true
+            done
+            # Copy extracted RPM files
+            if [ -d "temp_extract/rpm-package" ]; then
+              find temp_extract/rpm-package -name "*.rpm" -type f -exec cp {} release_files/ \;
+            fi
+            # Also check if RPM files are directly in the directory (fallback)
+            find artifacts/rpm-package -name "*.rpm" -type f -exec cp {} release_files/ \;
+          fi
+          
+          # Extract EXE files from artifact ZIP
+          if [ -d "artifacts/exe-package" ]; then
+            # Find and extract the artifact ZIP file
+            find artifacts/exe-package -name "*.zip" -type f | while read zipfile; do
+              echo "Extracting EXE from: $zipfile"
+              unzip -q "$zipfile" -d temp_extract/exe-package || true
+            done
+            # Copy extracted EXE files
+            if [ -d "temp_extract/exe-package" ]; then
+              find temp_extract/exe-package -name "*.exe" -type f -exec cp {} release_files/ \;
+            fi
+            # Also check if EXE files are directly in the directory (fallback)
+            find artifacts/exe-package -name "*.exe" -type f -exec cp {} release_files/ \;
+          fi
+          
+          # Extract APP bundles from artifact ZIP
+          if [ -d "artifacts/app-package" ]; then
+            # Find and extract the artifact ZIP file
+            find artifacts/app-package -name "*.zip" -type f | while read zipfile; do
+              echo "Extracting APP from: $zipfile"
+              unzip -q "$zipfile" -d temp_extract/app-package || true
+            done
+            # Copy extracted APP bundles
+            if [ -d "temp_extract/app-package" ]; then
+              find temp_extract/app-package -name "*.app" -type d -exec cp -r {} release_files/ \;
+            fi
+            # Also check if APP bundles are directly in the directory (fallback)
+            find artifacts/app-package -name "*.app" -type d -exec cp -r {} release_files/ \;
+          fi
+          
+          # Extract ZIP files from artifact ZIPs (python-scripts-zip and spicetify-extension)
+          # These are the original ZIPs that we want to keep as ZIPs
+          if [ -d "artifacts/python-scripts-zip" ]; then
+            # Find and extract the artifact ZIP file
+            find artifacts/python-scripts-zip -name "*.zip" -type f | while read zipfile; do
+              echo "Extracting Python scripts ZIP from: $zipfile"
+              unzip -q "$zipfile" -d temp_extract/python-scripts-zip || true
+            done
+            # Copy extracted ZIP files (these are the original Python scripts ZIPs)
+            if [ -d "temp_extract/python-scripts-zip" ]; then
+              find temp_extract/python-scripts-zip -name "*.zip" -type f -exec cp {} release_files/ \;
+            fi
+            # Also check if ZIP files are directly in the directory (fallback)
+            find artifacts/python-scripts-zip -name "*.zip" -type f -exec cp {} release_files/ \;
+          fi
+          
+          # Extract ZIP files from artifact ZIPs (spicetify-extension)
+          if [ -d "artifacts/spicetify-extension" ]; then
+            # Find and extract the artifact ZIP file
+            find artifacts/spicetify-extension -name "*.zip" -type f | while read zipfile; do
+              echo "Extracting Spicetify extension ZIP from: $zipfile"
+              unzip -q "$zipfile" -d temp_extract/spicetify-extension || true
+            done
+            # Copy extracted ZIP files (these are the original extension ZIPs)
+            if [ -d "temp_extract/spicetify-extension" ]; then
+              find temp_extract/spicetify-extension -name "*.zip" -type f -exec cp {} release_files/ \;
+            fi
+            # Also check if ZIP files are directly in the directory (fallback)
+            find artifacts/spicetify-extension -name "*.zip" -type f -exec cp {} release_files/ \;
+          fi
+          
+          # Clean up temporary extraction directory
+          rm -rf temp_extract
           
           # List files for verification
-          echo ""
           echo "=== Release files prepared ==="
           ls -lh release_files/
           echo ""
           echo "=== File types in release_files ==="
           for f in release_files/*; do
             if [ -f "$f" ]; then
-              file "$f"
+              echo "$(basename "$f"): $(file "$f" | cut -d: -f2-)"
             elif [ -d "$f" ]; then
-              echo "$f: directory"
+              echo "$(basename "$f"): directory"
             fi
           done
       
