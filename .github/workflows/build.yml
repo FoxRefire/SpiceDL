@@ -311,42 +311,113 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
       
-      - name: Download all artifacts
+      - name: Download DEB artifact
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
-          merge-multiple: false
+          name: deb-package
+          path: artifacts/deb
+      
+      - name: Download RPM artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: rpm-package
+          path: artifacts/rpm
+      
+      - name: Download EXE artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: exe-package
+          path: artifacts/exe
+      
+      - name: Download App artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-package
+          path: artifacts/app
+      
+      - name: Download Python ZIP artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: python-scripts-zip
+          path: artifacts/python-zip
+      
+      - name: Download Extension artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: spicetify-extension
+          path: artifacts/extension
       
       - name: Prepare release files
         run: |
-          # Flatten artifact structure to avoid nested directories
+          # Create release files directory
           mkdir -p release_files
           
           # Debug: List artifact structure
-          echo "Artifact structure:"
-          find artifacts -type f -o -type d | head -20
+          echo "=== Artifact structure ==="
+          find artifacts -type f -o -type d | sort
+          echo ""
           
-          # Copy DEB files (find and copy directly, not from nested ZIP)
-          find artifacts -name "*.deb" -type f -exec cp {} release_files/ \;
+          # Function to extract files from artifact directory (handles both flat and nested structures)
+          extract_files() {
+            local src_dir="$1"
+            local pattern="$2"
+            local dest_dir="$3"
+            
+            if [ ! -d "$src_dir" ]; then
+              echo "Warning: $src_dir does not exist"
+              return
+            fi
+            
+            # First, try to find files directly in the directory
+            local found=$(find "$src_dir" -name "$pattern" -type f | head -1)
+            if [ -n "$found" ]; then
+              echo "Found $pattern in $src_dir: $found"
+              cp "$found" "$dest_dir/" 2>/dev/null || true
+            else
+              # If not found, list what's actually in the directory
+              echo "Files in $src_dir:"
+              ls -la "$src_dir" || true
+              # Try to find in subdirectories
+              find "$src_dir" -type f | head -5
+            fi
+          }
           
-          # Copy RPM files (find and copy directly, not from nested ZIP)
-          find artifacts -name "*.rpm" -type f -exec cp {} release_files/ \;
+          # Extract DEB files
+          echo "=== Extracting DEB files ==="
+          extract_files "artifacts/deb" "*.deb" "release_files"
           
-          # Copy EXE files (find and copy directly, not from nested ZIP)
-          find artifacts -name "*.exe" -type f -exec cp {} release_files/ \;
+          # Extract RPM files
+          echo "=== Extracting RPM files ==="
+          extract_files "artifacts/rpm" "*.rpm" "release_files"
           
-          # Copy APP bundles (find and copy directly, not from nested ZIP)
-          find artifacts -name "*.app" -type d -exec cp -r {} release_files/ \;
+          # Extract EXE files
+          echo "=== Extracting EXE files ==="
+          extract_files "artifacts/exe" "*.exe" "release_files"
           
-          # Copy ZIP files directly (already zipped, don't re-zip)
-          find artifacts -name "*.zip" -type f -exec cp {} release_files/ \;
+          # Extract APP bundles
+          echo "=== Extracting APP bundles ==="
+          if [ -d "artifacts/app" ]; then
+            find artifacts/app -name "*.app" -type d -exec cp -r {} release_files/ \;
+          fi
+          
+          # Extract ZIP files
+          echo "=== Extracting ZIP files ==="
+          extract_files "artifacts/python-zip" "*.zip" "release_files"
+          extract_files "artifacts/extension" "*.zip" "release_files"
           
           # List files for verification
-          echo "Release files prepared:"
+          echo ""
+          echo "=== Release files prepared ==="
           ls -lh release_files/
           echo ""
-          echo "File types in release_files:"
-          file release_files/* || true
+          echo "=== File types in release_files ==="
+          for f in release_files/*; do
+            if [ -f "$f" ]; then
+              file "$f"
+            elif [ -d "$f" ]; then
+              echo "$f: directory"
+            fi
+          done
       
       - name: Create Release
         uses: softprops/action-gh-release@v1
