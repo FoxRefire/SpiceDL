@@ -328,95 +328,141 @@ jobs:
           find artifacts -type f | sort
           echo ""
           
-          # Extract DEB files from artifact ZIP
+          # Process each artifact directory
+          # actions/download-artifact@v4 extracts ZIPs automatically, but we need to handle nested ZIPs
+          
+          # Process DEB files
           if [ -d "artifacts/deb-package" ]; then
-            # Find and extract the artifact ZIP file
-            find artifacts/deb-package -name "*.zip" -type f | while read zipfile; do
-              echo "Extracting DEB from: $zipfile"
-              unzip -q "$zipfile" -d temp_extract/deb-package || true
-            done
-            # Copy extracted DEB files
-            if [ -d "temp_extract/deb-package" ]; then
-              find temp_extract/deb-package -name "*.deb" -type f -exec cp {} release_files/ \;
-            fi
-            # Also check if DEB files are directly in the directory (fallback)
+            echo "Processing DEB package..."
+            # Recursively find all .deb files
             find artifacts/deb-package -name "*.deb" -type f -exec cp {} release_files/ \;
+            # If no .deb found, check for ZIP and extract
+            if [ -z "$(find artifacts/deb-package -name "*.deb" -type f)" ]; then
+              find artifacts/deb-package -name "*.zip" -type f | while read zipfile; do
+                echo "Extracting DEB from ZIP: $zipfile"
+                unzip -q "$zipfile" -d temp_extract/deb || true
+                find temp_extract/deb -name "*.deb" -type f -exec cp {} release_files/ \;
+              done
+            fi
           fi
           
-          # Extract RPM files from artifact ZIP
+          # Process RPM files
           if [ -d "artifacts/rpm-package" ]; then
-            # Find and extract the artifact ZIP file
-            find artifacts/rpm-package -name "*.zip" -type f | while read zipfile; do
-              echo "Extracting RPM from: $zipfile"
-              unzip -q "$zipfile" -d temp_extract/rpm-package || true
-            done
-            # Copy extracted RPM files
-            if [ -d "temp_extract/rpm-package" ]; then
-              find temp_extract/rpm-package -name "*.rpm" -type f -exec cp {} release_files/ \;
-            fi
-            # Also check if RPM files are directly in the directory (fallback)
+            echo "Processing RPM package..."
+            # Recursively find all .rpm files
             find artifacts/rpm-package -name "*.rpm" -type f -exec cp {} release_files/ \;
+            # If no .rpm found, check for ZIP and extract
+            if [ -z "$(find artifacts/rpm-package -name "*.rpm" -type f)" ]; then
+              find artifacts/rpm-package -name "*.zip" -type f | while read zipfile; do
+                echo "Extracting RPM from ZIP: $zipfile"
+                unzip -q "$zipfile" -d temp_extract/rpm || true
+                find temp_extract/rpm -name "*.rpm" -type f -exec cp {} release_files/ \;
+              done
+            fi
           fi
           
-          # Extract EXE files from artifact ZIP
+          # Process EXE files
           if [ -d "artifacts/exe-package" ]; then
-            # Find and extract the artifact ZIP file
-            find artifacts/exe-package -name "*.zip" -type f | while read zipfile; do
-              echo "Extracting EXE from: $zipfile"
-              unzip -q "$zipfile" -d temp_extract/exe-package || true
-            done
-            # Copy extracted EXE files
-            if [ -d "temp_extract/exe-package" ]; then
-              find temp_extract/exe-package -name "*.exe" -type f -exec cp {} release_files/ \;
-            fi
-            # Also check if EXE files are directly in the directory (fallback)
+            echo "Processing EXE package..."
+            # Recursively find all .exe files
             find artifacts/exe-package -name "*.exe" -type f -exec cp {} release_files/ \;
+            # If no .exe found, check for ZIP and extract
+            if [ -z "$(find artifacts/exe-package -name "*.exe" -type f)" ]; then
+              find artifacts/exe-package -name "*.zip" -type f | while read zipfile; do
+                echo "Extracting EXE from ZIP: $zipfile"
+                unzip -q "$zipfile" -d temp_extract/exe || true
+                find temp_extract/exe -name "*.exe" -type f -exec cp {} release_files/ \;
+              done
+            fi
           fi
           
-          # Extract APP bundles from artifact ZIP
+          # Process APP bundles
           if [ -d "artifacts/app-package" ]; then
-            # Find and extract the artifact ZIP file
-            find artifacts/app-package -name "*.zip" -type f | while read zipfile; do
-              echo "Extracting APP from: $zipfile"
-              unzip -q "$zipfile" -d temp_extract/app-package || true
-            done
-            # Copy extracted APP bundles
-            if [ -d "temp_extract/app-package" ]; then
-              find temp_extract/app-package -name "*.app" -type d -exec cp -r {} release_files/ \;
-            fi
-            # Also check if APP bundles are directly in the directory (fallback)
+            echo "Processing APP package..."
+            # Recursively find all .app directories
             find artifacts/app-package -name "*.app" -type d -exec cp -r {} release_files/ \;
+            # If no .app found, check for ZIP and extract
+            if [ -z "$(find artifacts/app-package -name "*.app" -type d)" ]; then
+              find artifacts/app-package -name "*.zip" -type f | while read zipfile; do
+                echo "Extracting APP from ZIP: $zipfile"
+                unzip -q "$zipfile" -d temp_extract/app || true
+                find temp_extract/app -name "*.app" -type d -exec cp -r {} release_files/ \;
+              done
+            fi
           fi
           
-          # Extract ZIP files from artifact ZIPs (python-scripts-zip and spicetify-extension)
-          # These are the original ZIPs that we want to keep as ZIPs
+          # Process Python scripts ZIP
+          # This should remain as a ZIP file, but we need to extract it from the artifact wrapper ZIP
           if [ -d "artifacts/python-scripts-zip" ]; then
-            # Find and extract the artifact ZIP file
+            echo "Processing Python scripts ZIP..."
+            # Find all ZIP files and process them
             find artifacts/python-scripts-zip -name "*.zip" -type f | while read zipfile; do
-              echo "Extracting Python scripts ZIP from: $zipfile"
-              unzip -q "$zipfile" -d temp_extract/python-scripts-zip || true
+              echo "Checking ZIP file: $zipfile"
+              # Check if this ZIP contains another ZIP file
+              if unzip -l "$zipfile" 2>/dev/null | grep -q "\.zip$"; then
+                echo "ZIP contains another ZIP, extracting inner ZIP..."
+                unzip -q "$zipfile" -d temp_extract/python-zip || true
+                # Copy the inner ZIP file(s)
+                find temp_extract/python-zip -name "*.zip" -type f -exec cp {} release_files/ \;
+              else
+                # Check if this is a single-file ZIP (likely the actual scripts ZIP)
+                # or a multi-file ZIP (likely the artifact wrapper)
+                file_count=$(unzip -l "$zipfile" 2>/dev/null | tail -n +4 | head -n -2 | wc -l)
+                if [ "$file_count" -eq 1 ]; then
+                  # Single file - might be the wrapper, extract to check
+                  echo "Single-file ZIP, extracting to check contents..."
+                  unzip -q "$zipfile" -d temp_extract/python-zip-check || true
+                  # If extracted content is a ZIP, use it; otherwise use original
+                  if find temp_extract/python-zip-check -name "*.zip" -type f | grep -q .; then
+                    find temp_extract/python-zip-check -name "*.zip" -type f -exec cp {} release_files/ \;
+                  else
+                    cp "$zipfile" release_files/
+                  fi
+                  rm -rf temp_extract/python-zip-check
+                else
+                  # Multi-file ZIP - this is likely the actual scripts ZIP
+                  echo "Multi-file ZIP, using as Python scripts ZIP"
+                  cp "$zipfile" release_files/
+                fi
+              fi
             done
-            # Copy extracted ZIP files (these are the original Python scripts ZIPs)
-            if [ -d "temp_extract/python-scripts-zip" ]; then
-              find temp_extract/python-scripts-zip -name "*.zip" -type f -exec cp {} release_files/ \;
-            fi
-            # Also check if ZIP files are directly in the directory (fallback)
-            find artifacts/python-scripts-zip -name "*.zip" -type f -exec cp {} release_files/ \;
           fi
           
-          # Extract ZIP files from artifact ZIPs (spicetify-extension)
+          # Process Spicetify extension ZIP
+          # This should remain as a ZIP file, but we need to extract it from the artifact wrapper ZIP
           if [ -d "artifacts/spicetify-extension" ]; then
-            # Find and extract the artifact ZIP file
+            echo "Processing Spicetify extension ZIP..."
+            # Find all ZIP files and process them
             find artifacts/spicetify-extension -name "*.zip" -type f | while read zipfile; do
-              echo "Extracting Spicetify extension ZIP from: $zipfile"
-              unzip -q "$zipfile" -d temp_extract/spicetify-extension || true
+              echo "Checking ZIP file: $zipfile"
+              # Check if this ZIP contains another ZIP file
+              if unzip -l "$zipfile" 2>/dev/null | grep -q "\.zip$"; then
+                echo "ZIP contains another ZIP, extracting inner ZIP..."
+                unzip -q "$zipfile" -d temp_extract/extension-zip || true
+                # Copy the inner ZIP file(s)
+                find temp_extract/extension-zip -name "*.zip" -type f -exec cp {} release_files/ \;
+              else
+                # Check if this is a single-file ZIP (likely the actual extension ZIP)
+                # or a multi-file ZIP (likely the artifact wrapper)
+                file_count=$(unzip -l "$zipfile" 2>/dev/null | tail -n +4 | head -n -2 | wc -l)
+                if [ "$file_count" -eq 1 ]; then
+                  # Single file - might be the wrapper, extract to check
+                  echo "Single-file ZIP, extracting to check contents..."
+                  unzip -q "$zipfile" -d temp_extract/extension-zip-check || true
+                  # If extracted content is a ZIP, use it; otherwise use original
+                  if find temp_extract/extension-zip-check -name "*.zip" -type f | grep -q .; then
+                    find temp_extract/extension-zip-check -name "*.zip" -type f -exec cp {} release_files/ \;
+                  else
+                    cp "$zipfile" release_files/
+                  fi
+                  rm -rf temp_extract/extension-zip-check
+                else
+                  # Multi-file ZIP - this is likely the actual extension ZIP
+                  echo "Multi-file ZIP, using as Spicetify extension ZIP"
+                  cp "$zipfile" release_files/
+                fi
+              fi
             done
-            # Copy extracted ZIP files (these are the original extension ZIPs)
-            if [ -d "temp_extract/spicetify-extension" ]; then
-              find temp_extract/spicetify-extension -name "*.zip" -type f -exec cp {} release_files/ \;
-            fi
-            # Also check if ZIP files are directly in the directory (fallback)
-            find artifacts/spicetify-extension -name "*.zip" -type f -exec cp {} release_files/ \;
           fi
           
           # Clean up temporary extraction directory
