@@ -210,7 +210,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
       
-      - name: Create ZIP archive
+      - name: Prepare ZIP contents
         working-directory: ./api
         run: |
           # Create temporary directory for ZIP contents
@@ -227,16 +227,12 @@ jobs:
           
           # Copy documentation (optional but useful)
           cp README.md API_DOCUMENTATION.md ../zip_build/ 2>/dev/null || true
-          
-          # Create ZIP file
-          cd ../zip_build
-          zip -r spicedl2-api-scripts-${{ steps.version.outputs.version }}.zip .
       
-      - name: Upload ZIP artifact
+      - name: Upload ZIP contents artifact
         uses: actions/upload-artifact@v4
         with:
           name: python-scripts-zip
-          path: zip_build/spicedl2-api-scripts-${{ steps.version.outputs.version }}.zip
+          path: zip_build
           compression-level: 0
           if-no-files-found: error
           retention-days: 1
@@ -275,23 +271,11 @@ jobs:
       - name: Build extension
         run: npx spicetify-creator --out=dist --minify
       
-      - name: Create ZIP archive
-        run: |
-          # Create ZIP file from dist directory
-          if [ ! -d "dist" ]; then
-            echo "Error: dist directory not found"
-            ls -la
-            exit 1
-          fi
-          cd dist
-          zip -r ../spicedl2-extension-${{ steps.version.outputs.version }}.zip .
-          cd ..
-      
       - name: Upload extension artifact
         uses: actions/upload-artifact@v4
         with:
           name: spicetify-extension
-          path: spicedl2-extension-${{ steps.version.outputs.version }}.zip
+          path: dist
           compression-level: 0
           if-no-files-found: error
           retention-days: 1
@@ -386,91 +370,51 @@ jobs:
           fi
           
           # Process Python scripts ZIP
-          # Extract nested ZIPs until we find the actual scripts ZIP (multi-file ZIP)
+          # Create ZIP file from directory contents
           if [ -d "artifacts/python-scripts-zip" ]; then
             echo "Processing Python scripts ZIP..."
             cp -r artifacts/python-scripts-zip temp_extract/python-zip-work
+            extract_all_zips temp_extract/python-zip-work
             
-            # Extract ZIPs until we find a multi-file ZIP (the actual scripts ZIP)
-            local max_iterations=10
-            local iteration=0
+            # Find the directory with the actual files (not zip files)
+            local zip_dir=$(find temp_extract/python-zip-work -type d -name "zip_build" | head -n 1)
+            if [ -z "$zip_dir" ]; then
+              # If zip_build directory not found, use the first directory with files
+              zip_dir=$(find temp_extract/python-zip-work -type d -mindepth 1 -maxdepth 1 | head -n 1)
+            fi
             
-            while [ $iteration -lt $max_iterations ]; do
-              local zip_files=$(find temp_extract/python-zip-work -name "*.zip" -type f)
-              
-              if [ -z "$zip_files" ]; then
-                break
-              fi
-              
-              local found_multi_file=false
-              for zipfile in $zip_files; do
-                # Check if this is a multi-file ZIP (the actual scripts ZIP)
-                local file_count=$(unzip -l "$zipfile" 2>/dev/null | tail -n +4 | head -n -2 | wc -l)
-                if [ "$file_count" -gt 1 ]; then
-                  echo "Found Python scripts ZIP (multi-file, $file_count files): $zipfile"
-                  cp "$zipfile" release_files/
-                  found_multi_file=true
-                  break
-                else
-                  # Single file ZIP, might be wrapper, extract it
-                  echo "Extracting single-file ZIP: $zipfile"
-                  local extract_dir="${zipfile%.zip}_extracted"
-                  mkdir -p "$extract_dir"
-                  unzip -q "$zipfile" -d "$extract_dir" 2>/dev/null || true
-                  rm -f "$zipfile"
-                fi
-              done
-              
-              if [ "$found_multi_file" = true ]; then
-                break
-              fi
-              
-              iteration=$((iteration + 1))
-            done
+            if [ -n "$zip_dir" ] && [ -d "$zip_dir" ]; then
+              echo "Creating Python scripts ZIP from: $zip_dir"
+              cd "$zip_dir"
+              zip -r "../../../release_files/spicedl2-api-scripts-${{ steps.version.outputs.version }}.zip" .
+              cd - > /dev/null
+            else
+              echo "Warning: Could not find Python scripts directory"
+            fi
           fi
           
           # Process Spicetify extension ZIP
-          # Extract nested ZIPs until we find the actual extension ZIP (multi-file ZIP)
+          # Create ZIP file from directory contents
           if [ -d "artifacts/spicetify-extension" ]; then
             echo "Processing Spicetify extension ZIP..."
             cp -r artifacts/spicetify-extension temp_extract/extension-zip-work
+            extract_all_zips temp_extract/extension-zip-work
             
-            # Extract ZIPs until we find a multi-file ZIP (the actual extension ZIP)
-            local max_iterations=10
-            local iteration=0
+            # Find the directory with the actual files (dist directory)
+            local extension_dir=$(find temp_extract/extension-zip-work -type d -name "dist" | head -n 1)
+            if [ -z "$extension_dir" ]; then
+              # If dist directory not found, use the first directory with files
+              extension_dir=$(find temp_extract/extension-zip-work -type d -mindepth 1 -maxdepth 1 | head -n 1)
+            fi
             
-            while [ $iteration -lt $max_iterations ]; do
-              local zip_files=$(find temp_extract/extension-zip-work -name "*.zip" -type f)
-              
-              if [ -z "$zip_files" ]; then
-                break
-              fi
-              
-              local found_multi_file=false
-              for zipfile in $zip_files; do
-                # Check if this is a multi-file ZIP (the actual extension ZIP)
-                local file_count=$(unzip -l "$zipfile" 2>/dev/null | tail -n +4 | head -n -2 | wc -l)
-                if [ "$file_count" -gt 1 ]; then
-                  echo "Found Spicetify extension ZIP (multi-file, $file_count files): $zipfile"
-                  cp "$zipfile" release_files/
-                  found_multi_file=true
-                  break
-                else
-                  # Single file ZIP, might be wrapper, extract it
-                  echo "Extracting single-file ZIP: $zipfile"
-                  local extract_dir="${zipfile%.zip}_extracted"
-                  mkdir -p "$extract_dir"
-                  unzip -q "$zipfile" -d "$extract_dir" 2>/dev/null || true
-                  rm -f "$zipfile"
-                fi
-              done
-              
-              if [ "$found_multi_file" = true ]; then
-                break
-              fi
-              
-              iteration=$((iteration + 1))
-            done
+            if [ -n "$extension_dir" ] && [ -d "$extension_dir" ]; then
+              echo "Creating Spicetify extension ZIP from: $extension_dir"
+              cd "$extension_dir"
+              zip -r "../../../release_files/spicedl2-extension-${{ steps.version.outputs.version }}.zip" .
+              cd - > /dev/null
+            else
+              echo "Warning: Could not find Spicetify extension directory"
+            fi
           fi
           
           # Clean up temporary extraction directory
