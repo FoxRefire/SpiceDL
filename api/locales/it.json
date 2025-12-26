@@ -28,6 +28,16 @@
     "status": "Stato",
     "quit": "Esci",
     "active_downloads": "Download attivi: {count}"
+  },
+  "dependencies": {
+    "title": "Dipendenze Richieste Non Trovate",
+    "message": "Le seguenti dipendenze non sono installate:\n\n{missing}\n\nQueste devono essere installate per utilizzare la funzionalità di download.",
+    "spotdl_not_found": "spotdl",
+    "ffmpeg_not_found": "ffmpeg",
+    "install_instructions": "Istruzioni di installazione:",
+    "spotdl_install": "spotdl:\n  pip install spotdl\n  oppure\n  pip install git+https://github.com/spotDL/spotify-downloader.git",
+    "ffmpeg_install": "ffmpeg:\n  Linux: sudo apt-get install ffmpeg\n  macOS: brew install ffmpeg\n  Windows: Scarica da https://ffmpeg.org/download.html",
+    "ok": "OK"
   }
 }
 

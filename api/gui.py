@@ -649,6 +649,94 @@ def _create_settings_window_impl(config_manager, on_config_changed):
         traceback.print_exc()
 
 
+# Global flag to prevent multiple dialogs
+_dependencies_dialog_shown = False
+_dependencies_dialog_lock = threading.Lock()
+
+def show_dependencies_dialog(missing_deps: list):
+    """
+    Show dialog for missing dependencies
+    Args:
+        missing_deps: List of missing dependency names (e.g., ['spotdl', 'ffmpeg'])
+    """
+    global _dependencies_dialog_shown
+    
+    # Prevent multiple dialogs
+    with _dependencies_dialog_lock:
+        if _dependencies_dialog_shown:
+            return
+        _dependencies_dialog_shown = True
+    
+    from i18n import get_i18n, t
+    
+    # Get or create QApplication
+    app = QApplication.instance()
+    if app is None:
+        print("Warning: QApplication not found. Creating new instance.")
+        app = QApplication([])
+    
+    # Configure QApplication to not quit when last window is closed
+    app.setQuitOnLastWindowClosed(False)
+    
+    i18n = get_i18n()
+    
+    # Build missing dependencies list
+    missing_list = []
+    install_instructions = []
+    
+    if "spotdl" in missing_deps:
+        missing_list.append(t("dependencies.spotdl_not_found"))
+        install_instructions.append(t("dependencies.spotdl_install"))
+    
+    if "ffmpeg" in missing_deps:
+        missing_list.append(t("dependencies.ffmpeg_not_found"))
+        install_instructions.append(t("dependencies.ffmpeg_install"))
+    
+    missing_text = "\n".join(f"  • {dep}" for dep in missing_list)
+    instructions_text = "\n\n".join(install_instructions)
+    
+    # Create message box
+    msg = QMessageBox()
+    msg.setIcon(QMessageBox.Warning)
+    msg.setWindowTitle(t("dependencies.title"))
+    msg.setText(t("dependencies.message", missing=missing_text))
+    msg.setDetailedText(f"{t('dependencies.install_instructions')}\n\n{instructions_text}")
+    
+    # Style the message box
+    msg.setStyleSheet(f"""
+        QMessageBox {{
+            background-color: #1a1a1a;
+        }}
+        QMessageBox QLabel {{
+            color: #e8e8e8;
+            font-size: 13px;
+        }}
+        QPushButton {{
+            background-color: #1db954;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            min-width: 80px;
+        }}
+        QPushButton:hover {{
+            background-color: #1ed760;
+        }}
+    """)
+    
+    # Show dialog - must be called from main thread
+    if threading.current_thread() is threading.main_thread():
+        msg.exec()
+    else:
+        # Use QTimer to schedule execution in main thread
+        def show_in_main_thread():
+            msg.exec()
+        
+        QTimer.singleShot(0, show_in_main_thread)
+
+
 def show_settings(config_manager: ConfigManager, on_config_changed=None):
     """Show settings window (thread-safe)"""
     global _window_instance, _settings_signal

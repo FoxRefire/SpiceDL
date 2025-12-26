@@ -32,6 +32,7 @@ class Application:
         self.server_thread = None
         self.tray = None
         self.qt_app = None
+        self._missing_dependencies = None
     
     def start_server(self):
         """Start the Flask server in a separate thread"""
@@ -66,6 +67,14 @@ class Application:
             # This must be done after QApplication is created
             gui._initialize_signal_in_main_thread()
             
+            # Show dependencies dialog if needed (after Qt app is initialized)
+            if self._missing_dependencies:
+                from PySide6.QtCore import QTimer
+                def show_dialog():
+                    gui.show_dependencies_dialog(self._missing_dependencies)
+                # Schedule dialog to show after Qt event loop starts
+                QTimer.singleShot(500, show_dialog)
+            
             # Create tray app
             print("Creating tray app...")
             self.tray = tray_app.create_tray_app(
@@ -85,6 +94,15 @@ class Application:
     
     def run(self):
         """Run the application"""
+        # Check dependencies and store for later display
+        missing = download_manager.get_missing_dependencies()
+        if missing:
+            print(f"Warning: Missing dependencies: {', '.join(missing)}")
+            # Store missing dependencies to show dialog after Qt app is initialized
+            self._missing_dependencies = missing
+        else:
+            self._missing_dependencies = None
+        
         # Start server
         self.start_server()
         

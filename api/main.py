@@ -19,21 +19,31 @@ download_manager = DownloadManager(
     download_folder=config_manager.get("download_folder")
 )
 
-# Check if spotDL is available on startup
-if download_manager.spotdl_command is None:
-    print("Warning: spotDL not found.")
-    print("Please install it using:")
-    print("  pip install spotdl")
-    print("or")
-    print("  pip install git+https://github.com/spotDL/spotify-downloader.git")
+# Dependencies check is now handled in app.py to avoid duplicate dialogs
+# Print dependency status for logging
+missing = download_manager.get_missing_dependencies()
+if missing:
+    print(f"Warning: Missing dependencies: {', '.join(missing)}")
 else:
-    print(f"spotDL command found: {' '.join(download_manager.spotdl_command)}")
+    print("All dependencies found:")
+    if download_manager.spotdl_command:
+        print(f"  spotDL: {' '.join(download_manager.spotdl_command)}")
+    if download_manager.ffmpeg_command:
+        print(f"  ffmpeg: {download_manager.ffmpeg_command}")
 
 
 @app.route("/download", methods=["POST"])
 def download():
     """Start a download from Spotify URL"""
     try:
+        # Check dependencies before starting download
+        missing = download_manager.get_missing_dependencies()
+        if missing:
+            missing_list = ", ".join(missing)
+            return jsonify({
+                "error": f"Missing required dependencies: {missing_list}. Please install them before downloading."
+            }), 400
+        
         data = request.get_json()
         if not data or "url" not in data:
             return jsonify({"error": "Missing 'url' parameter"}), 400

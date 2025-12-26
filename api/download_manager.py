@@ -37,6 +37,7 @@ class DownloadManager:
         self.downloads: Dict[str, Dict] = {}
         self.lock = threading.Lock()
         self.spotdl_command = self._find_spotdl_command()
+        self.ffmpeg_command = self._find_ffmpeg_command()
     
     def _get_url_type(self, url: str) -> str:
         """Extract URL type from Spotify URL"""
@@ -109,11 +110,63 @@ class DownloadManager:
         # If nothing works, return None (will raise error later)
         return None
     
+    def _find_ffmpeg_command(self) -> Optional[str]:
+        """
+        Find ffmpeg command in PATH
+        Returns the path to ffmpeg if found, None otherwise
+        """
+        ffmpeg_path = shutil.which("ffmpeg")
+        if ffmpeg_path:
+            # Verify it's actually ffmpeg by checking version
+            try:
+                result = subprocess.run(
+                    [ffmpeg_path, "-version"],
+                    capture_output=True,
+                    timeout=5
+                )
+                if result.returncode == 0:
+                    return ffmpeg_path
+            except:
+                pass
+        return None
+    
+    def check_dependencies(self) -> Dict[str, bool]:
+        """
+        Check if required dependencies (spotdl and ffmpeg) are installed
+        Returns a dict with 'spotdl' and 'ffmpeg' keys indicating if each is available
+        """
+        return {
+            "spotdl": self.spotdl_command is not None,
+            "ffmpeg": self.ffmpeg_command is not None
+        }
+    
+    def get_missing_dependencies(self) -> list:
+        """
+        Get list of missing dependencies
+        Returns a list of dependency names that are not installed
+        """
+        deps = self.check_dependencies()
+        missing = []
+        if not deps["spotdl"]:
+            missing.append("spotdl")
+        if not deps["ffmpeg"]:
+            missing.append("ffmpeg")
+        return missing
+    
     def start_download(self, spotify_url: str) -> str:
         """
         Start a download for a Spotify URL
         Returns download ID
         """
+        # Check dependencies before starting
+        missing = self.get_missing_dependencies()
+        if missing:
+            missing_list = ", ".join(missing)
+            raise RuntimeError(
+                f"Missing required dependencies: {missing_list}. "
+                f"Please install them before downloading."
+            )
+        
         download_id = f"dl_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
         
         with self.lock:

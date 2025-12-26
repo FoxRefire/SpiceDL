@@ -28,6 +28,16 @@
     "status": "状态",
     "quit": "退出",
     "active_downloads": "活动下载：{count}"
+  },
+  "dependencies": {
+    "title": "未找到必需的依赖项",
+    "message": "以下依赖项未安装：\n\n{missing}\n\n必须安装这些依赖项才能使用下载功能。",
+    "spotdl_not_found": "spotdl",
+    "ffmpeg_not_found": "ffmpeg",
+    "install_instructions": "安装说明：",
+    "spotdl_install": "spotdl:\n  pip install spotdl\n  或\n  pip install git+https://github.com/spotDL/spotify-downloader.git",
+    "ffmpeg_install": "ffmpeg:\n  Linux: sudo apt-get install ffmpeg\n  macOS: brew install ffmpeg\n  Windows: 从 https://ffmpeg.org/download.html 下载",
+    "ok": "确定"
   }
 }
 
