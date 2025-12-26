@@ -38,6 +38,7 @@ class DownloadManager:
         self.lock = threading.Lock()
         self.spotdl_command = self._find_spotdl_command()
         self.ffmpeg_command = self._find_ffmpeg_command()
+        self.yt_dlp_command = self._find_yt_dlp_command()
     
     def _get_url_type(self, url: str) -> str:
         """Extract URL type from Spotify URL"""
@@ -180,14 +181,108 @@ class DownloadManager:
         
         return None
     
+    def _find_yt_dlp_command(self) -> Optional[str]:
+        """
+        Find yt-dlp command. Try multiple methods:
+        1. 'yt-dlp' command in PATH
+        2. 'python -m yt_dlp'
+        3. 'python3 -m yt_dlp'
+        """
+        # Try 'yt-dlp' command directly
+        yt_dlp_path = shutil.which("yt-dlp")
+        if yt_dlp_path:
+            # Verify it's actually yt-dlp by checking version
+            try:
+                run_kwargs = {
+                    "stdin": subprocess.DEVNULL,
+                    "stdout": subprocess.PIPE,
+                    "stderr": subprocess.PIPE,
+                    "timeout": 5
+                }
+                if sys.platform == "win32" and hasattr(subprocess, "CREATE_NO_WINDOW"):
+                    run_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+                
+                result = subprocess.run([yt_dlp_path, "--version"], **run_kwargs)
+                if result.returncode == 0:
+                    return yt_dlp_path
+            except Exception:
+                pass
+        
+        # Try 'python -m yt_dlp'
+        python_path = shutil.which("python")
+        if python_path:
+            try:
+                run_kwargs = {
+                    "stdin": subprocess.DEVNULL,
+                    "stdout": subprocess.PIPE,
+                    "stderr": subprocess.PIPE,
+                    "timeout": 5
+                }
+                if sys.platform == "win32" and hasattr(subprocess, "CREATE_NO_WINDOW"):
+                    run_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+                
+                result = subprocess.run(
+                    [python_path, "-m", "yt_dlp", "--version"],
+                    **run_kwargs
+                )
+                if result.returncode == 0:
+                    return f"{python_path} -m yt_dlp"
+            except:
+                pass
+        
+        # Try 'python3 -m yt_dlp'
+        python3_path = shutil.which("python3")
+        if python3_path:
+            try:
+                run_kwargs = {
+                    "stdin": subprocess.DEVNULL,
+                    "stdout": subprocess.PIPE,
+                    "stderr": subprocess.PIPE,
+                    "timeout": 5
+                }
+                if sys.platform == "win32" and hasattr(subprocess, "CREATE_NO_WINDOW"):
+                    run_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+                
+                result = subprocess.run(
+                    [python3_path, "-m", "yt_dlp", "--version"],
+                    **run_kwargs
+                )
+                if result.returncode == 0:
+                    return f"{python3_path} -m yt_dlp"
+            except:
+                pass
+        
+        # Try using sys.executable (current Python interpreter)
+        try:
+            run_kwargs = {
+                "stdin": subprocess.DEVNULL,
+                "stdout": subprocess.PIPE,
+                "stderr": subprocess.PIPE,
+                "timeout": 5
+            }
+            if sys.platform == "win32" and hasattr(subprocess, "CREATE_NO_WINDOW"):
+                run_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+            
+            result = subprocess.run(
+                [sys.executable, "-m", "yt_dlp", "--version"],
+                **run_kwargs
+            )
+            if result.returncode == 0:
+                return f"{sys.executable} -m yt_dlp"
+        except:
+            pass
+        
+        return None
+    
     def check_dependencies(self) -> Dict[str, bool]:
         """
-        Check if required dependencies (spotdl and ffmpeg) are installed
-        Returns a dict with 'spotdl' and 'ffmpeg' keys indicating if each is available
+        Check if required dependencies (spotdl, ffmpeg, and yt-dlp) are installed
+        Returns a dict with 'spotdl', 'ffmpeg', and 'yt_dlp' keys indicating if each is available
         """
         return {
             "spotdl": self.spotdl_command is not None,
-            "ffmpeg": self.ffmpeg_command is not None
+            "ffmpeg": self.ffmpeg_command is not None,
+            "yt_dlp": self.yt_dlp_command is not None
         }
     
     def get_missing_dependencies(self) -> list:
@@ -201,6 +296,8 @@ class DownloadManager:
             missing.append("spotdl")
         if not deps["ffmpeg"]:
             missing.append("ffmpeg")
+        if not deps["yt_dlp"]:
+            missing.append("yt_dlp")
         return missing
     
     def start_download(self, spotify_url: str) -> str:

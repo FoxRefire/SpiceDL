@@ -34,9 +34,11 @@
     "message": "The following dependencies are not installed:\n\n{missing}\n\nThese must be installed to use the download functionality.",
     "spotdl_not_found": "spotdl",
     "ffmpeg_not_found": "ffmpeg",
+    "yt_dlp_not_found": "yt-dlp",
     "install_instructions": "Installation instructions:",
     "spotdl_install": "spotdl:\n  pip install spotdl\n  or\n  pip install git+https://github.com/spotDL/spotify-downloader.git",
     "ffmpeg_install": "ffmpeg:\n  Linux: sudo apt-get install ffmpeg\n  macOS: brew install ffmpeg\n  Windows: Download from https://ffmpeg.org/download.html",
+    "yt_dlp_install": "yt-dlp:\n  pip install yt-dlp\n  or\n  pip install git+https://github.com/yt-dlp/yt-dlp.git",
     "ok": "OK"
   }
 }

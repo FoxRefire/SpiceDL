@@ -692,6 +692,10 @@ def show_dependencies_dialog(missing_deps: list):
         missing_list.append(t("dependencies.ffmpeg_not_found"))
         install_instructions.append(t("dependencies.ffmpeg_install"))
     
+    if "yt_dlp" in missing_deps:
+        missing_list.append(t("dependencies.yt_dlp_not_found"))
+        install_instructions.append(t("dependencies.yt_dlp_install"))
+    
     missing_text = "\n".join(f"  • {dep}" for dep in missing_list)
     instructions_text = "\n\n".join(install_instructions)
     

@@ -30,6 +30,8 @@ else:
         print(f"  spotDL: {' '.join(download_manager.spotdl_command)}")
     if download_manager.ffmpeg_command:
         print(f"  ffmpeg: {download_manager.ffmpeg_command}")
+    if download_manager.yt_dlp_command:
+        print(f"  yt-dlp: {download_manager.yt_dlp_command}")
 
 
 @app.route("/download", methods=["POST"])

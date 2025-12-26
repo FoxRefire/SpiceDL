@@ -34,9 +34,11 @@
     "message": "以下の依存関係がインストールされていません:\n\n{missing}\n\nダウンロード機能を使用するには、これらをインストールする必要があります。",
     "spotdl_not_found": "spotdl",
     "ffmpeg_not_found": "ffmpeg",
+    "yt_dlp_not_found": "yt-dlp",
     "install_instructions": "インストール方法:",
     "spotdl_install": "spotdl:\n  pip install spotdl\n  または\n  pip install git+https://github.com/spotDL/spotify-downloader.git",
     "ffmpeg_install": "ffmpeg:\n  Linux: sudo apt-get install ffmpeg\n  macOS: brew install ffmpeg\n  Windows: https://ffmpeg.org/download.html からダウンロード",
+    "yt_dlp_install": "yt-dlp:\n  pip install yt-dlp\n  または\n  pip install git+https://github.com/yt-dlp/yt-dlp.git",
     "ok": "了解"
   }
 }
