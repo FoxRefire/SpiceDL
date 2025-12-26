@@ -68,11 +68,6 @@ def build_exe():
     if icon_file.exists():
         cmd.insert(-1, f"--windows-icon-from-ico={icon_file}")
     
-    # Add data files if needed
-    config_file = script_dir / "config.json"
-    if config_file.exists():
-        cmd.extend([f"--include-data-file={config_file}={config_file.name}"])
-    
     # Add locales directory for i18n support
     locales_dir = script_dir / "locales"
     if locales_dir.exists():

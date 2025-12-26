@@ -21,7 +21,6 @@ mkdir -p "${PACKAGE_DIR}/etc/${PROJECT_NAME}"
 
 # Copy application files
 cp -r "${SCRIPT_DIR}"/*.py "${PACKAGE_DIR}${INSTALL_PREFIX}/lib/${PROJECT_NAME}/" 2>/dev/null || true
-cp "${SCRIPT_DIR}/config.json" "${PACKAGE_DIR}/etc/${PROJECT_NAME}/config.json.example" 2>/dev/null || true
 
 # Create launcher script
 cat > "${PACKAGE_DIR}${INSTALL_PREFIX}/bin/${PROJECT_NAME}" << 'EOF'

@@ -4,9 +4,7 @@ Setup script for Py2App (macOS App bundle)
 from setuptools import setup
 
 APP = ['app.py']
-DATA_FILES = [
-    ('', ['config.json']),
-]
+DATA_FILES = []
 OPTIONS = {
     'argv_emulation': False,  # Disable to reduce size
     'optimize': 2,  # Maximum optimization
