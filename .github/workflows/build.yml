@@ -59,7 +59,6 @@ jobs:
         with:
           name: deb-package
           path: api/build/fpm/*.deb
-          compression-level: 0
 
   build-linux-rpm:
     name: Build RPM Package (Linux)
@@ -108,7 +107,6 @@ jobs:
         with:
           name: rpm-package
           path: api/build/fpm/*.rpm
-          compression-level: 0
 
   build-windows-exe:
     name: Build EXE (Windows)
@@ -159,7 +157,6 @@ jobs:
         with:
           name: exe-package
           path: api/build/nuitka/dist/*.exe
-          compression-level: 0
 
   build-macos-app:
     name: Build App Bundle (macOS)
@@ -191,7 +188,6 @@ jobs:
         with:
           name: app-package
           path: api/build/py2app/dist/*.app
-          compression-level: 0
 
   build-python-zip:
     name: Build Python Scripts ZIP
@@ -233,7 +229,6 @@ jobs:
         with:
           name: python-scripts-zip
           path: zip_build
-          compression-level: 0
           if-no-files-found: error
           retention-days: 1
 
@@ -276,160 +271,6 @@ jobs:
         with:
           name: spicetify-extension
           path: dist
-          compression-level: 0
           if-no-files-found: error
           retention-days: 1
 
-  create-release:
-    name: Create Release
-    needs: [build-linux-deb, build-linux-rpm, build-windows-exe, build-macos-app, build-python-zip, build-spicetify-extension]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Extract version
-        id: version
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION"
-      
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          merge-multiple: false
-      
-      - name: Prepare release files
-        run: |
-          # Flatten artifact structure to avoid nested directories
-          mkdir -p release_files
-          mkdir -p temp_extract
-          
-          # Debug: List artifact structure
-          echo "=== Artifact structure ==="
-          find artifacts -type f | sort
-          echo ""
-          
-          # Recursively extract all ZIP files until we find target files
-          # This handles nested ZIPs created by upload-artifact
-          extract_all_zips() {
-            local dir=$1
-            local max_iterations=10
-            local iteration=0
-            
-            while [ $iteration -lt $max_iterations ]; do
-              local zip_count=$(find "$dir" -name "*.zip" -type f | wc -l)
-              if [ "$zip_count" -eq 0 ]; then
-                break
-              fi
-              
-              echo "Iteration $iteration: Found $zip_count ZIP files, extracting..."
-              find "$dir" -name "*.zip" -type f | while read zipfile; do
-                local extract_dir="${zipfile%.zip}_extracted"
-                mkdir -p "$extract_dir"
-                unzip -q "$zipfile" -d "$extract_dir" 2>/dev/null || true
-                rm -f "$zipfile"
-              done
-              
-              iteration=$((iteration + 1))
-            done
-          }
-          
-          # Process DEB files
-          if [ -d "artifacts/deb-package" ]; then
-            echo "Processing DEB package..."
-            cp -r artifacts/deb-package temp_extract/deb-work
-            extract_all_zips temp_extract/deb-work
-            find temp_extract/deb-work -name "*.deb" -type f -exec cp {} release_files/ \;
-          fi
-          
-          # Process RPM files
-          if [ -d "artifacts/rpm-package" ]; then
-            echo "Processing RPM package..."
-            cp -r artifacts/rpm-package temp_extract/rpm-work
-            extract_all_zips temp_extract/rpm-work
-            find temp_extract/rpm-work -name "*.rpm" -type f -exec cp {} release_files/ \;
-          fi
-          
-          # Process EXE files
-          if [ -d "artifacts/exe-package" ]; then
-            echo "Processing EXE package..."
-            cp -r artifacts/exe-package temp_extract/exe-work
-            extract_all_zips temp_extract/exe-work
-            find temp_extract/exe-work -name "*.exe" -type f -exec cp {} release_files/ \;
-          fi
-          
-          # Process APP bundles
-          if [ -d "artifacts/app-package" ]; then
-            echo "Processing APP package..."
-            cp -r artifacts/app-package temp_extract/app-work
-            extract_all_zips temp_extract/app-work
-            find temp_extract/app-work -name "*.app" -type d -exec cp -r {} release_files/ \;
-          fi
-          
-          # Process Python scripts ZIP
-          # Create ZIP file from directory contents
-          if [ -d "artifacts/python-scripts-zip" ]; then
-            echo "Processing Python scripts ZIP..."
-            cp -r artifacts/python-scripts-zip temp_extract/python-zip-work
-            extract_all_zips temp_extract/python-zip-work
-            
-            # Find the directory with the actual files (not zip files)
-            local zip_dir=$(find temp_extract/python-zip-work -type d -name "zip_build" | head -n 1)
-            if [ -z "$zip_dir" ]; then
-              # If zip_build directory not found, use the first directory with files
-              zip_dir=$(find temp_extract/python-zip-work -type d -mindepth 1 -maxdepth 1 | head -n 1)
-            fi
-            
-            if [ -n "$zip_dir" ] && [ -d "$zip_dir" ]; then
-              echo "Creating Python scripts ZIP from: $zip_dir"
-              cd "$zip_dir"
-              zip -r "../../../release_files/spicedl2-api-scripts-${{ steps.version.outputs.version }}.zip" .
-              cd - > /dev/null
-            else
-              echo "Warning: Could not find Python scripts directory"
-            fi
-          fi
-          
-          # Process Spicetify extension ZIP
-          # Create ZIP file from directory contents
-          if [ -d "artifacts/spicetify-extension" ]; then
-            echo "Processing Spicetify extension ZIP..."
-            cp -r artifacts/spicetify-extension temp_extract/extension-zip-work
-            extract_all_zips temp_extract/extension-zip-work
-            
-            # Find the directory with the actual files (dist directory)
-            local extension_dir=$(find temp_extract/extension-zip-work -type d -name "dist" | head -n 1)
-            if [ -z "$extension_dir" ]; then
-              # If dist directory not found, use the first directory with files
-              extension_dir=$(find temp_extract/extension-zip-work -type d -mindepth 1 -maxdepth 1 | head -n 1)
-            fi
-            
-            if [ -n "$extension_dir" ] && [ -d "$extension_dir" ]; then
-              echo "Creating Spicetify extension ZIP from: $extension_dir"
-              cd "$extension_dir"
-              zip -r "../../../release_files/spicedl2-extension-${{ steps.version.outputs.version }}.zip" .
-              cd - > /dev/null
-            else
-              echo "Warning: Could not find Spicetify extension directory"
-            fi
-          fi
-          
-          # Clean up temporary extraction directory
-          rm -rf temp_extract
-          
-          # List files for verification
-          echo "=== Release files prepared ==="
-          ls -lh release_files/
-          echo ""
-          echo "=== File types in release_files ==="
-          for f in release_files/*; do
-            if [ -f "$f" ]; then
-              echo "$(basename "$f"): $(file "$f" | cut -d: -f2-)"
-            elif [ -d "$f" ]; then
-              echo "$(basename "$f"): directory"
-            fi
-          done
-      
