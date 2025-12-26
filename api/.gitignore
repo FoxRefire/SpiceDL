@@ -28,3 +28,6 @@ Thumbs.db
 *.rpm
 *.exe
 *.app
+
+
+config.json

@@ -17,8 +17,23 @@ class DownloadManager:
     """Manages SpiceDL downloads and tracks their progress"""
     
     def __init__(self, download_folder: str = "./downloads"):
-        self.download_folder = Path(download_folder)
-        self.download_folder.mkdir(parents=True, exist_ok=True)
+        self.download_folder = Path(download_folder).resolve()
+        try:
+            self.download_folder.mkdir(parents=True, exist_ok=True)
+        except (PermissionError, OSError) as e:
+            # If we can't create the folder, try using a fallback location
+            fallback_folder = Path.home() / "Music" / "SpiceDL"
+            print(f"Warning: Could not create download folder at {self.download_folder}: {e}")
+            print(f"Using fallback location: {fallback_folder}")
+            self.download_folder = fallback_folder
+            try:
+                self.download_folder.mkdir(parents=True, exist_ok=True)
+            except Exception as e2:
+                raise RuntimeError(
+                    f"Failed to create download folder at both {download_folder} and {fallback_folder}. "
+                    f"Please check permissions or set a different download folder in settings. "
+                    f"Error: {e2}"
+                ) from e2
         self.downloads: Dict[str, Dict] = {}
         self.lock = threading.Lock()
         self.spotdl_command = self._find_spotdl_command()
