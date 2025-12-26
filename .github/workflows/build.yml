@@ -219,8 +219,8 @@ jobs:
           # Copy Python scripts (excluding build-related files)
           cp app.py config_manager.py download_manager.py gui.py i18n.py main.py tray_app.py ../zip_build/
           
-          # Copy configuration and requirements
-          cp config.json requirements.txt ../zip_build/
+          # Copy requirements
+          cp requirements.txt ../zip_build/
           
           # Copy locales directory
           cp -r locales ../zip_build/
