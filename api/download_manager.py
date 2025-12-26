@@ -395,15 +395,56 @@ class DownloadManager:
             print(f"Executing spotDL command: {' '.join(cmd)}")
             print(f"Download folder: {self.download_folder}")
             
+            # #region agent log
+            import json
+            log_path = "Z:/ドキュメント/GitHub/SpiceDL/.cursor/debug.log"
+            try:
+                with open(log_path, "a", encoding="utf-8") as f:
+                    f.write(json.dumps({"sessionId": "debug-session", "runId": "run1", "hypothesisId": "A", "location": "download_manager.py:398", "message": "Before subprocess.Popen - checking parameters", "data": {"cmd": cmd, "sys_platform": sys.platform, "has_create_no_window": hasattr(subprocess, "CREATE_NO_WINDOW")}, "timestamp": int(datetime.now().timestamp() * 1000)}) + "\n")
+            except: pass
+            # #endregion
+            
             # Start process
-            process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,  # Combine stderr into stdout
-                text=True,
-                bufsize=1,
-                universal_newlines=True
-            )
+            # Prepare subprocess arguments
+            popen_kwargs = {
+                "stdout": subprocess.PIPE,
+                "stderr": subprocess.STDOUT,  # Combine stderr into stdout
+                "text": True,
+                "bufsize": 1,
+                "universal_newlines": True
+            }
+            
+            # #region agent log
+            try:
+                with open(log_path, "a", encoding="utf-8") as f:
+                    f.write(json.dumps({"sessionId": "debug-session", "runId": "run1", "hypothesisId": "A", "location": "download_manager.py:410", "message": "Before subprocess.Popen - popen_kwargs prepared", "data": {"popen_kwargs": {k: str(v) if not isinstance(v, (int, bool)) else v for k, v in popen_kwargs.items()}, "stdin_set": "stdin" in popen_kwargs, "creationflags_set": "creationflags" in popen_kwargs}, "timestamp": int(datetime.now().timestamp() * 1000)}) + "\n")
+            except: pass
+            # #endregion
+            
+            # #region agent log
+            try:
+                with open(log_path, "a", encoding="utf-8") as f:
+                    f.write(json.dumps({"sessionId": "debug-session", "runId": "run1", "hypothesisId": "B", "location": "download_manager.py:413", "message": "Before subprocess.Popen - Windows/Nuitka compatibility check", "data": {"sys_platform": sys.platform, "is_windows": sys.platform == "win32", "has_create_no_window": hasattr(subprocess, "CREATE_NO_WINDOW")}, "timestamp": int(datetime.now().timestamp() * 1000)}) + "\n")
+            except: pass
+            # #endregion
+            
+            try:
+                process = subprocess.Popen(cmd, **popen_kwargs)
+            except Exception as e:
+                # #region agent log
+                try:
+                    with open(log_path, "a", encoding="utf-8") as f:
+                        f.write(json.dumps({"sessionId": "debug-session", "runId": "run1", "hypothesisId": "A,B,C", "location": "download_manager.py:420", "message": "subprocess.Popen failed", "data": {"error_type": type(e).__name__, "error_msg": str(e), "error_args": e.args if hasattr(e, "args") else None}, "timestamp": int(datetime.now().timestamp() * 1000)}) + "\n")
+                except: pass
+                # #endregion
+                raise
+            
+            # #region agent log
+            try:
+                with open(log_path, "a", encoding="utf-8") as f:
+                    f.write(json.dumps({"sessionId": "debug-session", "runId": "run1", "hypothesisId": "A,B", "location": "download_manager.py:428", "message": "After subprocess.Popen - process created", "data": {"process_pid": process.pid if hasattr(process, "pid") else None, "stdout_available": process.stdout is not None, "stderr_available": process.stderr is not None}, "timestamp": int(datetime.now().timestamp() * 1000)}) + "\n")
+            except: pass
+            # #endregion
             
             with self.lock:
                 self.downloads[download_id]["process"] = process
@@ -414,11 +455,26 @@ class DownloadManager:
             # Read output line by line to track progress
             output_lines = []
             
-            for line in process.stdout:
-                if line:
-                    output_lines.append(line)
-                    line_stripped = line.strip()
-                    print(f"spotDL: {line_stripped}")
+            # #region agent log
+            try:
+                with open(log_path, "a", encoding="utf-8") as f:
+                    f.write(json.dumps({"sessionId": "debug-session", "runId": "run1", "hypothesisId": "D", "location": "download_manager.py:441", "message": "Before process.stdout iteration", "data": {"stdout_type": type(process.stdout).__name__ if process.stdout else None, "stdout_closed": process.stdout.closed if process.stdout and hasattr(process.stdout, "closed") else None}, "timestamp": int(datetime.now().timestamp() * 1000)}) + "\n")
+            except: pass
+            # #endregion
+            
+            try:
+                for line in process.stdout:
+                    # #region agent log
+                    try:
+                        with open(log_path, "a", encoding="utf-8") as f:
+                            f.write(json.dumps({"sessionId": "debug-session", "runId": "run1", "hypothesisId": "D", "location": "download_manager.py:467", "message": "Reading line from process.stdout", "data": {"line_length": len(line) if line else 0, "stdout_closed": process.stdout.closed if process.stdout and hasattr(process.stdout, "closed") else None}, "timestamp": int(datetime.now().timestamp() * 1000)}) + "\n")
+                    except: pass
+                    # #endregion
+                    
+                    if line:
+                        output_lines.append(line)
+                        line_stripped = line.strip()
+                        print(f"spotDL: {line_stripped}")
                     
                     # Parse progress from --simple-tui output
                     # Format examples: "Downloading 1/10", "Downloaded 5/10", etc.
@@ -451,9 +507,40 @@ class DownloadManager:
                             current_error = self.downloads[download_id].get("error", "")
                             if line_stripped not in current_error:
                                 self.downloads[download_id]["error"] = (current_error + "\n" + line_stripped).strip()
+            except Exception as stdout_error:
+                # #region agent log
+                try:
+                    with open(log_path, "a", encoding="utf-8") as f:
+                        f.write(json.dumps({"sessionId": "debug-session", "runId": "run1", "hypothesisId": "D", "location": "download_manager.py:502", "message": "Error during process.stdout iteration", "data": {"error_type": type(stdout_error).__name__, "error_msg": str(stdout_error), "error_args": stdout_error.args if hasattr(stdout_error, "args") else None, "stdout_closed": process.stdout.closed if process.stdout and hasattr(process.stdout, "closed") else None}, "timestamp": int(datetime.now().timestamp() * 1000)}) + "\n")
+                except: pass
+                # #endregion
+                raise
+            
+            # #region agent log
+            try:
+                with open(log_path, "a", encoding="utf-8") as f:
+                    f.write(json.dumps({"sessionId": "debug-session", "runId": "run1", "hypothesisId": "E", "location": "download_manager.py:510", "message": "Before process.wait()", "data": {"process_pid": process.pid if hasattr(process, "pid") else None, "stdout_closed": process.stdout.closed if process.stdout and hasattr(process.stdout, "closed") else None}, "timestamp": int(datetime.now().timestamp() * 1000)}) + "\n")
+            except: pass
+            # #endregion
             
             # Wait for process to complete
-            return_code = process.wait()
+            try:
+                return_code = process.wait()
+            except Exception as wait_error:
+                # #region agent log
+                try:
+                    with open(log_path, "a", encoding="utf-8") as f:
+                        f.write(json.dumps({"sessionId": "debug-session", "runId": "run1", "hypothesisId": "E", "location": "download_manager.py:518", "message": "Error during process.wait()", "data": {"error_type": type(wait_error).__name__, "error_msg": str(wait_error), "error_args": wait_error.args if hasattr(wait_error, "args") else None}, "timestamp": int(datetime.now().timestamp() * 1000)}) + "\n")
+                except: pass
+                # #endregion
+                raise
+            
+            # #region agent log
+            try:
+                with open(log_path, "a", encoding="utf-8") as f:
+                    f.write(json.dumps({"sessionId": "debug-session", "runId": "run1", "hypothesisId": "E", "location": "download_manager.py:525", "message": "After process.wait()", "data": {"return_code": return_code}, "timestamp": int(datetime.now().timestamp() * 1000)}) + "\n")
+            except: pass
+            # #endregion
             
             # Get full output
             full_output = "\n".join(output_lines)
