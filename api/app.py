@@ -4,6 +4,7 @@ Main application entry point with GUI and system tray
 import threading
 import sys
 import os
+import argparse
 from pathlib import Path
 
 # Import modules
@@ -28,11 +29,12 @@ except (ImportError, ValueError) as e:
 class Application:
     """Main application class"""
     
-    def __init__(self):
+    def __init__(self, headless=False):
         self.server_thread = None
         self.tray = None
         self.qt_app = None
         self._missing_dependencies = None
+        self.headless = headless
     
     def start_server(self):
         """Start the Flask server in a separate thread"""
@@ -98,19 +100,20 @@ class Application:
         missing = download_manager.get_missing_dependencies()
         if missing:
             print(f"Warning: Missing dependencies: {', '.join(missing)}")
-            # Store missing dependencies to show dialog after Qt app is initialized
-            self._missing_dependencies = missing
+            if not self.headless:
+                # Store missing dependencies to show dialog after Qt app is initialized
+                self._missing_dependencies = missing
+            else:
+                print("Running in headless mode - dependency warnings will not be shown in GUI")
         else:
             self._missing_dependencies = None
         
         # Start server
         self.start_server()
         
-        # Start system tray (if available) - this will run the Qt event loop
-        if TRAY_AVAILABLE:
-            self.start_tray()
-        else:
-            # If no tray, just wait for keyboard interrupt
+        # In headless mode, skip GUI and tray
+        if self.headless:
+            print("Running in headless mode - no GUI will be displayed")
             try:
                 while True:
                     import time
@@ -118,17 +121,39 @@ class Application:
             except KeyboardInterrupt:
                 print("\nShutting down...")
                 sys.exit(0)
+        else:
+            # Start system tray (if available) - this will run the Qt event loop
+            if TRAY_AVAILABLE:
+                self.start_tray()
+            else:
+                # If no tray, just wait for keyboard interrupt
+                try:
+                    while True:
+                        import time
+                        time.sleep(1)
+                except KeyboardInterrupt:
+                    print("\nShutting down...")
+                    sys.exit(0)
 
 
 def main():
     """Main entry point"""
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="SpiceDL API Server")
+    parser.add_argument(
+        "--headless",
+        action="store_true",
+        help="Run in headless mode without GUI or system tray"
+    )
+    args = parser.parse_args()
+    
     # Check if running on Windows (hide console if needed)
     if sys.platform == "win32":
         # On Windows, we might want to hide the console
         # But for debugging, we'll keep it visible
         pass
     
-    app_instance = Application()
+    app_instance = Application(headless=args.headless)
     app_instance.run()
 
 
