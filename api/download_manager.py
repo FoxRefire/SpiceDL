@@ -216,16 +216,23 @@ class DownloadManager:
             
             # Verify it's actually ffmpeg by checking version
             try:
-                result = subprocess.run(
-                    [ffmpeg_path, "-version"],
-                    capture_output=True,
-                    timeout=5
-                )
+                # Explicitly set stdin/stdout/stderr for Nuitka onefile compatibility
+                # On Windows, use CREATE_NO_WINDOW to avoid console window creation
+                run_kwargs = {
+                    "stdin": subprocess.DEVNULL,
+                    "stdout": subprocess.PIPE,
+                    "stderr": subprocess.PIPE,
+                    "timeout": 5
+                }
+                if sys.platform == "win32" and hasattr(subprocess, "CREATE_NO_WINDOW"):
+                    run_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+                
+                result = subprocess.run([ffmpeg_path, "-version"], **run_kwargs)
                 
                 # #region agent log
                 log_data = {
                     "sessionId": "debug-session",
-                    "runId": "initial",
+                    "runId": "post-fix",
                     "hypothesisId": "C",
                     "location": "download_manager.py:_find_ffmpeg_command:after_subprocess",
                     "message": "After subprocess.run verification",
@@ -244,6 +251,23 @@ class DownloadManager:
                 # #endregion
                 
                 if result.returncode == 0:
+                    # #region agent log
+                    log_data = {
+                        "sessionId": "debug-session",
+                        "runId": "post-fix",
+                        "hypothesisId": "C",
+                        "location": "download_manager.py:_find_ffmpeg_command:success",
+                        "message": "ffmpeg found and verified successfully",
+                        "data": {
+                            "ffmpeg_path": ffmpeg_path
+                        },
+                        "timestamp": int(datetime.now().timestamp() * 1000)
+                    }
+                    try:
+                        with open("Z:/ドキュメント/GitHub/SpiceDL/.cursor/debug.log", "a", encoding="utf-8") as f:
+                            f.write(json.dumps(log_data, ensure_ascii=False) + "\n")
+                    except: pass
+                    # #endregion
                     return ffmpeg_path
             except Exception as e:
                 # #region agent log
@@ -289,12 +313,18 @@ class DownloadManager:
             
             # Try using 'where' command on Windows
             try:
-                where_result = subprocess.run(
-                    ["where", "ffmpeg"],
-                    capture_output=True,
-                    text=True,
-                    timeout=5
-                )
+                # Explicitly set stdin/stdout/stderr for Nuitka onefile compatibility
+                run_kwargs = {
+                    "stdin": subprocess.DEVNULL,
+                    "stdout": subprocess.PIPE,
+                    "stderr": subprocess.PIPE,
+                    "text": True,
+                    "timeout": 5
+                }
+                if sys.platform == "win32" and hasattr(subprocess, "CREATE_NO_WINDOW"):
+                    run_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+                
+                where_result = subprocess.run(["where", "ffmpeg"], **run_kwargs)
                 
                 # #region agent log
                 log_data = {
@@ -321,11 +351,17 @@ class DownloadManager:
                     if potential_path:
                         # Verify it works
                         try:
-                            verify_result = subprocess.run(
-                                [potential_path, "-version"],
-                                capture_output=True,
-                                timeout=5
-                            )
+                            # Explicitly set stdin/stdout/stderr for Nuitka onefile compatibility
+                            run_kwargs = {
+                                "stdin": subprocess.DEVNULL,
+                                "stdout": subprocess.PIPE,
+                                "stderr": subprocess.PIPE,
+                                "timeout": 5
+                            }
+                            if sys.platform == "win32" and hasattr(subprocess, "CREATE_NO_WINDOW"):
+                                run_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+                            
+                            verify_result = subprocess.run([potential_path, "-version"], **run_kwargs)
                             if verify_result.returncode == 0:
                                 # #region agent log
                                 log_data = {
