@@ -94,7 +94,8 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
               `https://api.spotify.com/v1/tracks/${id}`
             );
             
-            if (response) {
+            // Check if response is valid (not an error object)
+            if (response && response.name && !response.code && !response.error) {
               const album = response.album;
               const artists = response.artists || [];
               const artist = artists[0];
@@ -114,7 +115,8 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
               `https://api.spotify.com/v1/albums/${id}`
             );
             
-            if (response) {
+            // Check if response is valid (not an error object)
+            if (response && response.name && !response.code && !response.error) {
               const artists = response.artists || [];
               const artist = artists[0];
               
@@ -133,7 +135,8 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
               `https://api.spotify.com/v1/playlists/${id}`
             );
             
-            if (response) {
+            // Check if response is valid (not an error object)
+            if (response && response.name && !response.code && !response.error) {
               const owner = response.owner;
               
               metadata = {
@@ -155,7 +158,8 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
       if (!metadata) {
         if (type === "track") {
           try {
-            const query = Spicetify.GraphQL.Definitions.browseTrack;
+            // Try using GraphQL Definitions directly
+            const query = Spicetify.GraphQL?.Definitions?.browseTrack;
             if (query) {
               const result = await Spicetify.GraphQL.Request(query, { uri });
               
@@ -198,6 +202,158 @@ const DownloadStatusPage: React.FC<DownloadStatusPageProps> = () => {
                   name: track.name || "Unknown Track",
                   artist: artistName || "Unknown Artist",
                   album: album?.name || "Unknown Album",
+                  imageUrl: imageUrl,
+                  uri: uri,
+                  type: "track",
+                };
+              }
+            } else {
+              // Try exploring GraphQL Definitions to find available queries
+              // Try getTrackName first to get track name
+              let trackName = null;
+              let artistName = null;
+              let albumName = null;
+              let imageUrl = null;
+              
+              try {
+                const trackNameQuery = Spicetify.GraphQL?.Definitions?.['getTrackName'];
+                if (trackNameQuery) {
+                  const nameResult = await Spicetify.GraphQL.Request(trackNameQuery, { uri });
+                  const track = nameResult?.trackUnion || nameResult?.data?.trackUnion || nameResult?.track || nameResult?.data?.track;
+                  if (track) {
+                    trackName = track.name || track.title;
+                  }
+                }
+              } catch (e) {
+                // Continue
+              }
+              
+              // Try queryTrackArtists to get artist information
+              try {
+                const artistsQuery = Spicetify.GraphQL?.Definitions?.['queryTrackArtists'];
+                if (artistsQuery) {
+                  const artistsResult = await Spicetify.GraphQL.Request(artistsQuery, { uri });
+                  const track = artistsResult?.trackUnion || artistsResult?.data?.trackUnion || artistsResult?.track || artistsResult?.data?.track;
+                  if (track?.artists) {
+                    const artists = track.artists.items || track.artists;
+                    const artist = Array.isArray(artists) ? artists[0] : artists;
+                    artistName = artist?.profile?.name || artist?.name || artist?.displayName;
+                  }
+                  
+                  // Try to get album information from queryTrackArtists result (may contain album info)
+                  if (track?.albumOfTrack || track?.album) {
+                    const album = track.albumOfTrack || track.album;
+                    albumName = album.name;
+                    // Get cover art
+                    const coverArt = album.coverArt || album.cover;
+                    if (coverArt) {
+                      const sources = coverArt.sources || coverArt.sourcesV2;
+                      if (sources && Array.isArray(sources)) {
+                        imageUrl = sources[2]?.url || sources[0]?.url || sources[1]?.url;
+                      }
+                      if (!imageUrl) {
+                        imageUrl = coverArt.image?.url || coverArt.url;
+                      }
+                    }
+                    if (!imageUrl) {
+                      const images = album.images?.items || album.images;
+                      if (images && Array.isArray(images) && images.length > 0) {
+                        const image = images[0];
+                        const imageSources = image?.sources || image?.sourcesV2;
+                        if (imageSources && Array.isArray(imageSources)) {
+                          imageUrl = imageSources[2]?.url || imageSources[0]?.url || imageSources[1]?.url;
+                        }
+                        if (!imageUrl) {
+                          imageUrl = image?.url;
+                        }
+                      }
+                    }
+                  }
+                }
+              } catch (e) {
+                // Continue
+              }
+              
+              // Try getAlbumNameAndTracks to get album information (may fail, but try anyway)
+              if (!albumName) {
+                try {
+                  const albumQuery = Spicetify.GraphQL?.Definitions?.['getAlbumNameAndTracks'];
+                  if (albumQuery) {
+                    const albumResult = await Spicetify.GraphQL.Request(albumQuery, { uri });
+                    if (albumResult && !albumResult.errors) {
+                      const album = albumResult?.data?.album || albumResult?.album;
+                      if (album) {
+                        albumName = album.name;
+                        const images = album.images?.items || album.images;
+                        if (images && Array.isArray(images) && images.length > 0) {
+                          const image = images[0];
+                          imageUrl = image?.sources?.[2]?.url || image?.sources?.[0]?.url || image?.url;
+                        }
+                      }
+                    }
+                  }
+                } catch (e) {
+                  // Continue - album query may fail
+                }
+              }
+              
+              // Try queryAlbumTracks as alternative
+              if (!albumName) {
+                try {
+                  const albumTracksQuery = Spicetify.GraphQL?.Definitions?.['queryAlbumTracks'];
+                  if (albumTracksQuery) {
+                    const albumTracksResult = await Spicetify.GraphQL.Request(albumTracksQuery, { uri });
+                    const album = albumTracksResult?.album || albumTracksResult?.data?.album;
+                    if (album) {
+                      albumName = album.name;
+                      const images = album.images?.items || album.images;
+                      if (images && Array.isArray(images) && images.length > 0) {
+                        const image = images[0];
+                        imageUrl = image?.sources?.[2]?.url || image?.sources?.[0]?.url || image?.url;
+                      }
+                    }
+                  }
+                } catch (e) {
+                  // Continue
+                }
+              }
+              
+              // Try decorateContextTracks as last resort
+              if (!albumName) {
+                try {
+                  const decorateQuery = Spicetify.GraphQL?.Definitions?.['decorateContextTracks'];
+                  if (decorateQuery) {
+                    const decorateResult = await Spicetify.GraphQL.Request(decorateQuery, { uris: [uri] });
+                    const tracks = decorateResult?.tracks || decorateResult?.data?.tracks;
+                    if (tracks && Array.isArray(tracks) && tracks.length > 0) {
+                      const track = tracks[0];
+                      if (track?.albumOfTrack || track?.album) {
+                        const album = track.albumOfTrack || track.album;
+                        albumName = album.name;
+                        const coverArt = album.coverArt || album.cover;
+                        if (coverArt) {
+                          const sources = coverArt.sources || coverArt.sourcesV2;
+                          if (sources && Array.isArray(sources)) {
+                            imageUrl = sources[2]?.url || sources[0]?.url || sources[1]?.url;
+                          }
+                          if (!imageUrl) {
+                            imageUrl = coverArt.image?.url || coverArt.url;
+                          }
+                        }
+                      }
+                    }
+                  }
+                } catch (e) {
+                  // Continue
+                }
+              }
+              
+              // Create metadata if we got at least the track name
+              if (trackName) {
+                metadata = {
+                  name: trackName,
+                  artist: artistName || "Unknown Artist",
+                  album: albumName || "Unknown Album",
                   imageUrl: imageUrl,
                   uri: uri,
                   type: "track",
