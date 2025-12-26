@@ -10,9 +10,9 @@
 Install SpiceDL from Spicetify marketplace or [releases](https://github.com/FoxRefire/SpiceDL/releases/download/1.0/spicedl.js)
 
 ### 2. Install backend API
-* [Windows](https://github.com/FoxRefire/SpiceDL/releases/download/1.0/api-windows.exe)
-* [Mac](https://github.com/FoxRefire/SpiceDL/releases/download/1.0/api-mac.zip)
-* [Python(Linux/Windows/Mac)](https://github.com/FoxRefire/SpiceDL/releases/download/1.0/api-python-multiplatform.zip)
+* [Windows](https://github.com/FoxRefire/SpiceDL/releases/download/2.0/api-windows.exe)
+* [Mac](https://github.com/FoxRefire/SpiceDL/releases/download/2.0/api-mac.zip)
+* [Python(Linux/Windows/Mac)](https://github.com/FoxRefire/SpiceDL/releases/download/2.0/api-python-multiplatform.zip)
 
 You can execute python backend by running following commands
 ```bash
