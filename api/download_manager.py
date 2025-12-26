@@ -115,105 +115,9 @@ class DownloadManager:
         Find ffmpeg command in PATH
         Returns the path to ffmpeg if found, None otherwise
         """
-        # #region agent log
-        import json
-        # Try to get actual system PATH on Windows
-        actual_path = os.environ.get("PATH", "")
-        if sys.platform == "win32":
-            try:
-                # Try to get PATH from system using subprocess
-                path_result = subprocess.run(
-                    ["cmd", "/c", "echo", "%PATH%"],
-                    capture_output=True,
-                    text=True,
-                    timeout=2,
-                    shell=True
-                )
-                if path_result.returncode == 0:
-                    actual_path = path_result.stdout.strip()
-            except:
-                pass
-        
-        log_data = {
-            "sessionId": "debug-session",
-            "runId": "initial",
-            "hypothesisId": "A",
-            "location": "download_manager.py:_find_ffmpeg_command:entry",
-            "message": "Finding ffmpeg command",
-            "data": {
-                "os_environ_path": os.environ.get("PATH", ""),
-                "actual_system_path": actual_path if sys.platform == "win32" else os.environ.get("PATH", ""),
-                "sys_platform": sys.platform,
-                "is_nuitka": hasattr(sys, "frozen") or "__compiled__" in dir(sys),
-                "path_match": os.environ.get("PATH", "") == actual_path if sys.platform == "win32" else True
-            },
-            "timestamp": int(datetime.now().timestamp() * 1000)
-        }
-        try:
-            with open("Z:/ドキュメント/GitHub/SpiceDL/.cursor/debug.log", "a", encoding="utf-8") as f:
-                f.write(json.dumps(log_data, ensure_ascii=False) + "\n")
-        except: pass
-        # #endregion
-        
-        # #region agent log
-        log_data = {
-            "sessionId": "debug-session",
-            "runId": "initial",
-            "hypothesisId": "B",
-            "location": "download_manager.py:_find_ffmpeg_command:before_shutil_which",
-            "message": "Before shutil.which call",
-            "data": {
-                "path_entries": os.environ.get("PATH", "").split(os.pathsep) if os.pathsep in os.environ.get("PATH", "") else []
-            },
-            "timestamp": int(datetime.now().timestamp() * 1000)
-        }
-        try:
-            with open("Z:/ドキュメント/GitHub/SpiceDL/.cursor/debug.log", "a", encoding="utf-8") as f:
-                f.write(json.dumps(log_data, ensure_ascii=False) + "\n")
-        except: pass
-        # #endregion
-        
         ffmpeg_path = shutil.which("ffmpeg")
         
-        # #region agent log
-        log_data = {
-            "sessionId": "debug-session",
-            "runId": "initial",
-            "hypothesisId": "A",
-            "location": "download_manager.py:_find_ffmpeg_command:after_shutil_which",
-            "message": "After shutil.which call",
-            "data": {
-                "ffmpeg_path": ffmpeg_path,
-                "ffmpeg_found": ffmpeg_path is not None
-            },
-            "timestamp": int(datetime.now().timestamp() * 1000)
-        }
-        try:
-            with open("Z:/ドキュメント/GitHub/SpiceDL/.cursor/debug.log", "a", encoding="utf-8") as f:
-                f.write(json.dumps(log_data, ensure_ascii=False) + "\n")
-        except: pass
-        # #endregion
-        
         if ffmpeg_path:
-            # #region agent log
-            log_data = {
-                "sessionId": "debug-session",
-                "runId": "initial",
-                "hypothesisId": "C",
-                "location": "download_manager.py:_find_ffmpeg_command:before_subprocess",
-                "message": "Before subprocess.run verification",
-                "data": {
-                    "ffmpeg_path": ffmpeg_path,
-                    "command": [ffmpeg_path, "-version"]
-                },
-                "timestamp": int(datetime.now().timestamp() * 1000)
-            }
-            try:
-                with open("Z:/ドキュメント/GitHub/SpiceDL/.cursor/debug.log", "a", encoding="utf-8") as f:
-                    f.write(json.dumps(log_data, ensure_ascii=False) + "\n")
-            except: pass
-            # #endregion
-            
             # Verify it's actually ffmpeg by checking version
             try:
                 # Explicitly set stdin/stdout/stderr for Nuitka onefile compatibility
@@ -229,88 +133,13 @@ class DownloadManager:
                 
                 result = subprocess.run([ffmpeg_path, "-version"], **run_kwargs)
                 
-                # #region agent log
-                log_data = {
-                    "sessionId": "debug-session",
-                    "runId": "post-fix",
-                    "hypothesisId": "C",
-                    "location": "download_manager.py:_find_ffmpeg_command:after_subprocess",
-                    "message": "After subprocess.run verification",
-                    "data": {
-                        "returncode": result.returncode,
-                        "stdout_length": len(result.stdout) if result.stdout else 0,
-                        "stderr_length": len(result.stderr) if result.stderr else 0,
-                        "verification_success": result.returncode == 0
-                    },
-                    "timestamp": int(datetime.now().timestamp() * 1000)
-                }
-                try:
-                    with open("Z:/ドキュメント/GitHub/SpiceDL/.cursor/debug.log", "a", encoding="utf-8") as f:
-                        f.write(json.dumps(log_data, ensure_ascii=False) + "\n")
-                except: pass
-                # #endregion
-                
                 if result.returncode == 0:
-                    # #region agent log
-                    log_data = {
-                        "sessionId": "debug-session",
-                        "runId": "post-fix",
-                        "hypothesisId": "C",
-                        "location": "download_manager.py:_find_ffmpeg_command:success",
-                        "message": "ffmpeg found and verified successfully",
-                        "data": {
-                            "ffmpeg_path": ffmpeg_path
-                        },
-                        "timestamp": int(datetime.now().timestamp() * 1000)
-                    }
-                    try:
-                        with open("Z:/ドキュメント/GitHub/SpiceDL/.cursor/debug.log", "a", encoding="utf-8") as f:
-                            f.write(json.dumps(log_data, ensure_ascii=False) + "\n")
-                    except: pass
-                    # #endregion
                     return ffmpeg_path
-            except Exception as e:
-                # #region agent log
-                log_data = {
-                    "sessionId": "debug-session",
-                    "runId": "initial",
-                    "hypothesisId": "C",
-                    "location": "download_manager.py:_find_ffmpeg_command:subprocess_exception",
-                    "message": "Subprocess.run exception",
-                    "data": {
-                        "exception_type": type(e).__name__,
-                        "exception_message": str(e)
-                    },
-                    "timestamp": int(datetime.now().timestamp() * 1000)
-                }
-                try:
-                    with open("Z:/ドキュメント/GitHub/SpiceDL/.cursor/debug.log", "a", encoding="utf-8") as f:
-                        f.write(json.dumps(log_data, ensure_ascii=False) + "\n")
-                except: pass
-                # #endregion
+            except Exception:
                 pass
         
         # Try alternative methods for Windows/Nuitka
         if sys.platform == "win32" and ffmpeg_path is None:
-            # #region agent log
-            log_data = {
-                "sessionId": "debug-session",
-                "runId": "initial",
-                "hypothesisId": "D",
-                "location": "download_manager.py:_find_ffmpeg_command:windows_fallback",
-                "message": "Trying Windows fallback methods",
-                "data": {
-                    "trying_cmd": True,
-                    "trying_registry": False
-                },
-                "timestamp": int(datetime.now().timestamp() * 1000)
-            }
-            try:
-                with open("Z:/ドキュメント/GitHub/SpiceDL/.cursor/debug.log", "a", encoding="utf-8") as f:
-                    f.write(json.dumps(log_data, ensure_ascii=False) + "\n")
-            except: pass
-            # #endregion
-            
             # Try using 'where' command on Windows
             try:
                 # Explicitly set stdin/stdout/stderr for Nuitka onefile compatibility
@@ -325,26 +154,6 @@ class DownloadManager:
                     run_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
                 
                 where_result = subprocess.run(["where", "ffmpeg"], **run_kwargs)
-                
-                # #region agent log
-                log_data = {
-                    "sessionId": "debug-session",
-                    "runId": "initial",
-                    "hypothesisId": "D",
-                    "location": "download_manager.py:_find_ffmpeg_command:where_command",
-                    "message": "Windows 'where' command result",
-                    "data": {
-                        "returncode": where_result.returncode,
-                        "stdout": where_result.stdout.strip() if where_result.stdout else None,
-                        "stderr": where_result.stderr.strip() if where_result.stderr else None
-                    },
-                    "timestamp": int(datetime.now().timestamp() * 1000)
-                }
-                try:
-                    with open("Z:/ドキュメント/GitHub/SpiceDL/.cursor/debug.log", "a", encoding="utf-8") as f:
-                        f.write(json.dumps(log_data, ensure_ascii=False) + "\n")
-                except: pass
-                # #endregion
                 
                 if where_result.returncode == 0 and where_result.stdout:
                     potential_path = where_result.stdout.strip().split('\n')[0].strip()
@@ -363,64 +172,11 @@ class DownloadManager:
                             
                             verify_result = subprocess.run([potential_path, "-version"], **run_kwargs)
                             if verify_result.returncode == 0:
-                                # #region agent log
-                                log_data = {
-                                    "sessionId": "debug-session",
-                                    "runId": "initial",
-                                    "hypothesisId": "D",
-                                    "location": "download_manager.py:_find_ffmpeg_command:where_success",
-                                    "message": "Windows 'where' found valid ffmpeg",
-                                    "data": {
-                                        "ffmpeg_path": potential_path
-                                    },
-                                    "timestamp": int(datetime.now().timestamp() * 1000)
-                                }
-                                try:
-                                    with open("Z:/ドキュメント/GitHub/SpiceDL/.cursor/debug.log", "a", encoding="utf-8") as f:
-                                        f.write(json.dumps(log_data, ensure_ascii=False) + "\n")
-                                except: pass
-                                # #endregion
                                 return potential_path
                         except:
                             pass
-            except Exception as e:
-                # #region agent log
-                log_data = {
-                    "sessionId": "debug-session",
-                    "runId": "initial",
-                    "hypothesisId": "D",
-                    "location": "download_manager.py:_find_ffmpeg_command:where_exception",
-                    "message": "Windows 'where' command exception",
-                    "data": {
-                        "exception_type": type(e).__name__,
-                        "exception_message": str(e)
-                    },
-                    "timestamp": int(datetime.now().timestamp() * 1000)
-                }
-                try:
-                    with open("Z:/ドキュメント/GitHub/SpiceDL/.cursor/debug.log", "a", encoding="utf-8") as f:
-                        f.write(json.dumps(log_data, ensure_ascii=False) + "\n")
-                except: pass
-                # #endregion
+            except Exception:
                 pass
-        
-        # #region agent log
-        log_data = {
-            "sessionId": "debug-session",
-            "runId": "initial",
-            "hypothesisId": "E",
-            "location": "download_manager.py:_find_ffmpeg_command:exit",
-            "message": "ffmpeg not found",
-            "data": {
-                "final_result": None
-            },
-            "timestamp": int(datetime.now().timestamp() * 1000)
-        }
-        try:
-            with open("Z:/ドキュメント/GitHub/SpiceDL/.cursor/debug.log", "a", encoding="utf-8") as f:
-                f.write(json.dumps(log_data, ensure_ascii=False) + "\n")
-        except: pass
-        # #endregion
         
         return None
     
