@@ -406,7 +406,9 @@ class DownloadManager:
             
             # Start process
             # Prepare subprocess arguments
+            # Explicitly set stdin/stdout/stderr for Nuitka onefile compatibility
             popen_kwargs = {
+                "stdin": subprocess.DEVNULL,  # Fix for WinError 6 in Nuitka builds
                 "stdout": subprocess.PIPE,
                 "stderr": subprocess.STDOUT,  # Combine stderr into stdout
                 "text": True,
@@ -414,10 +416,14 @@ class DownloadManager:
                 "universal_newlines": True
             }
             
+            # On Windows, use CREATE_NO_WINDOW to avoid console window creation
+            if sys.platform == "win32" and hasattr(subprocess, "CREATE_NO_WINDOW"):
+                popen_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+            
             # #region agent log
             try:
                 with open(log_path, "a", encoding="utf-8") as f:
-                    f.write(json.dumps({"sessionId": "debug-session", "runId": "run1", "hypothesisId": "A", "location": "download_manager.py:410", "message": "Before subprocess.Popen - popen_kwargs prepared", "data": {"popen_kwargs": {k: str(v) if not isinstance(v, (int, bool)) else v for k, v in popen_kwargs.items()}, "stdin_set": "stdin" in popen_kwargs, "creationflags_set": "creationflags" in popen_kwargs}, "timestamp": int(datetime.now().timestamp() * 1000)}) + "\n")
+                    f.write(json.dumps({"sessionId": "debug-session", "runId": "post-fix", "hypothesisId": "A,B", "location": "download_manager.py:415", "message": "Before subprocess.Popen - popen_kwargs prepared (FIXED)", "data": {"popen_kwargs": {k: str(v) if not isinstance(v, (int, bool)) else v for k, v in popen_kwargs.items()}, "stdin_set": "stdin" in popen_kwargs, "creationflags_set": "creationflags" in popen_kwargs}, "timestamp": int(datetime.now().timestamp() * 1000)}) + "\n")
             except: pass
             # #endregion
             
