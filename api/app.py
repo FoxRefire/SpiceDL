@@ -7,9 +7,22 @@ import os
 import argparse
 from pathlib import Path
 
+# Check for --headless flag in command line arguments before importing main
+# This allows us to set environment variable before main.py imports gui
+if "--headless" in sys.argv:
+    os.environ["SPICEDL_HEADLESS"] = "1"
+
 # Import modules
 from main import app, run_server, config_manager, download_manager
-import gui
+
+# Only import gui if not in headless mode
+gui = None
+if os.environ.get("SPICEDL_HEADLESS") != "1":
+    try:
+        import gui
+    except ImportError as e:
+        print(f"Warning: GUI module not available: {e}")
+        gui = None
 
 # Try to import tray_app, but make it optional
 try:
@@ -67,10 +80,11 @@ class Application:
             
             # Initialize GUI signal in main thread (required for cross-thread communication)
             # This must be done after QApplication is created
-            gui._initialize_signal_in_main_thread()
+            if gui is not None:
+                gui._initialize_signal_in_main_thread()
             
             # Show dependencies dialog if needed (after Qt app is initialized)
-            if self._missing_dependencies:
+            if self._missing_dependencies and gui is not None:
                 from PySide6.QtCore import QTimer
                 def show_dialog():
                     gui.show_dependencies_dialog(self._missing_dependencies)
@@ -146,6 +160,10 @@ def main():
         help="Run in headless mode without GUI or system tray"
     )
     args = parser.parse_args()
+    
+    # Set environment variable for headless mode so other modules can check it
+    if args.headless:
+        os.environ["SPICEDL_HEADLESS"] = "1"
     
     # Check if running on Windows (hide console if needed)
     if sys.platform == "win32":

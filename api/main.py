@@ -8,7 +8,15 @@ from config_manager import ConfigManager
 import threading
 import sys
 import os
-import gui
+
+# Only import gui if not in headless mode
+gui = None
+if os.environ.get("SPICEDL_HEADLESS") != "1":
+    try:
+        import gui
+    except ImportError as e:
+        print(f"Warning: GUI module not available: {e}")
+        gui = None
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -114,6 +122,11 @@ def health():
 def open_settings():
     """Open GUI settings window"""
     try:
+        if gui is None:
+            return jsonify({
+                "error": "GUI is not available in headless mode"
+            }), 503
+        
         def on_config_changed():
             """Callback when config is changed"""
             # Update download manager folder if needed
