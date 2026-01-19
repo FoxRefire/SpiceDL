@@ -16,7 +16,7 @@ Install SpiceDL from Spicetify marketplace or [releases](https://github.com/FoxR
 
 You can execute python backend by running following commands
 ```bash
-cd api-python-multiplatform
+cd api
 pip install -r requirements.txt
 pip install spotdl
 python app.py
