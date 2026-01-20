@@ -1,0 +1,9 @@
+services:
+  spicedl-server:
+    container_name: spicedl-server
+    build:
+      context: api
+    ports:
+      - "127.0.0.1:5985:5985"
+    volumes:
+      - ./Music/SpiceDL:/home/appuser/Music/SpiceDL
