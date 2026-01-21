@@ -6,10 +6,12 @@
 
 ## Installation
 
-### 1. Install extension
+### Bare Metal
+
+#### 1. Install extension
 Install SpiceDL from Spicetify marketplace or [releases](https://github.com/FoxRefire/SpiceDL/releases/download/1.0/spicedl.js)
 
-### 2. Install backend API
+#### 2. Install backend API
 * [Windows](https://github.com/FoxRefire/SpiceDL/releases/download/2.0/api-windows.exe)
 * [Mac](https://github.com/FoxRefire/SpiceDL/releases/download/2.0/api-mac.zip)
 * [Python(Linux/Windows/Mac)](https://github.com/FoxRefire/SpiceDL/releases/download/2.0/api-python-multiplatform.zip)
@@ -25,6 +27,12 @@ python app.py
 Or click standalone prebuilt package for your platform.
 
 The API server will start and show a system tray icon. Right-click the icon to access settings.
+
+## Docker compose
+
+1. Clone project and cd into `SpiceDL`
+2. Copy `docker.example.config.json` to `config.json` in the `api/` folder
+3. Run `docker-compose up -d` in the root directory.
 
 ## Features
 

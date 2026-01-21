@@ -118,6 +118,14 @@ Settings are saved in the `config.json` file. You can change them from the GUI o
 }
 ```
 
+For docker the host config should be `0.0.0.0`. See `config.docker.json` for an example.
+
+```bash
+{
+  "host": "0.0.0.0"
+}
+```
+
 ## Supported Platforms
 
 - Windows
